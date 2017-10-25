@@ -1,0 +1,12 @@
+.topx_table	{
+    margin-right: 30px;
+}
+
+.topx_table td 	{
+    padding-right: 10px;
+}
+
+
+.topx_table th	{
+    background-color: #cccccc;
+}

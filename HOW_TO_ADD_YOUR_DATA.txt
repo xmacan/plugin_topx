@@ -1,0 +1,47 @@
+HOW TO ADD ANOTHER DATA SOURCE:
+-------------------------------
+
+All available datasources:
+SELECT DISTINCT data_template.id, data_template.name,hash
+FROM data_template INNER JOIN data_template_data
+ON data_template.id=data_template_data.data_template_id
+ORDER BY data_template.name
+
+I choose (id and hash are important):
+|  41 | Interface - Traffic                            | 6632e1e0b58a565c135d7ff90440c335 |
+
+
+Go to (change id at the and to correct id)
+http(s)://your.cacti.installation/data_templates.php?action=template_edit&id=41
+
+Second way is via sql client:
+select * from data_template_rrd where local_data_id=0 and data_template_id=16 order by data_source_name
+
+
+There you find data source item (one or more, but my plugin works with one or two only):
+For Interface traffic you found two  data source items named "traffic_in" and "traffic_out"
+
+Now you have all informations.
+
+Now you must edit setup.php. I marked 4 places for your code:
+MARK 1)
+INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit) 
+values ('desc','Interface  traffic','6632e1e0b58a565c135d7ff90440c335','traffic_in+traffic_out','bits','/1024','kbit')");
+sorting - asc or desc
+dt_name - your name of this data source
+hash - you found out it earlier
+operation with values - if you have only one, insert itemvalue=itemvalue (proc=proc). For two operation, try to understand prepared rows
+unit - number of process or similiar
+final_operation - for displaying in topx table
+final_units - dtto
+
+MARK2)
+For one value (proc=proc) only add row at the beginning of case (like cpu=cpu, ...)
+For two values, you can do what you want (add,substract,...). Result must be in $avg_value
+
+MARK3)
+Similar to MARK2. Be careful with two values. You have to insert one to value1 and second to value2
+
+MARK4)
+Similar to MARK3, instead of update it is for first insert of values
+
