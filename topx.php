@@ -28,7 +28,12 @@ if ( isset_request_var ('age') )
 if (!isset($_SESSION["age"]))
     $_SESSION["age"] = "quarter";
 
-$_SESSION['topx'] = get_filter_request_var('topx', FILTER_VALIDATE_INT, $options['default'] = 5);
+
+if ( isset_request_var ('topx') && array_key_exists (get_request_var ('topx'), $ar_topx)) 
+    $_SESSION['topx'] = get_filter_request_var('topx');
+
+if (!isset($_SESSION['topx']))
+    $_SESSION['topx'] = 5;    
 
 if ( isset_request_var ('sort') && array_key_exists (get_request_var ('sort'), $ar_sort)) 
     $_SESSION["sort"] = get_request_var ('sort');
