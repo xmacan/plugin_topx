@@ -7,6 +7,9 @@ displays hights and lows (example: most utilization CPU, interface traffic, ..)
 ## Author
 Petr Macek (petr.macek@kostax.cz)
 
+## Screenshot
+![topx_0 4](https://user-images.githubusercontent.com/26485719/33798484-77f3a780-dd19-11e7-9cfc-f9b79704c74a.png)
+
 ## Installation
 Copy directory topx to plugins directory
 Check file permission (Linux/unix - readable for www server)
