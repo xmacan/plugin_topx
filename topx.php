@@ -193,8 +193,17 @@ if ($result)	{
     	    $not_all_data = false;
     	    
     	    echo "<tr><th>Name</th><th>Hostname</th><th>" . $param['unit'] . "</th></tr>\n";
-	    foreach($result2 as $row2)        {
+    	    $graph = array();
+    	    $label = array();
 
+		$avg = round(db_fetch_cell ("SELECT avg(result_value) from data_template_data as t2 left join data_local as t1 on t1.id=t2.local_data_id left join plugin_topx_average as t0 on t0.local_data_id = t2.local_data_id left join host on host.id=t1.host_id where t0.data_template_id=30 and t0.age='quarter'"),2);
+		
+		array_push($label,"Average all");
+		array_push($graph,$avg);
+
+    	    
+	    foreach($result2 as $row2)        {
+		
 		$host = db_fetch_row ("select description,hostname from data_local as t1 left join data_template_data as t2 on t1.id=t2.local_data_id left join host on host.id=t1.host_id where t2.local_data_id =" . $row2["local_data_id"]);
 		    $graph_id = db_fetch_cell ("select distinct(local_graph_id) from graph_templates_item 
 					left join data_template_rrd on (graph_templates_item.task_item_id=data_template_rrd.id) 
@@ -205,15 +214,17 @@ if ($result)	{
     		    echo "<td>";
 
 		    // hodnotu mam v $row['result_value']
-
-
-		    if ( $param['final_operation'] == "strip")	// only round
-			echo  round($row2["result_value"],$param['final_number']) . " " . $param["final_unit"];
+		    array_push($graph,round($row2['result_value'],2));
+		    array_push($label,$host['description']);
+		    
+		    if ( $param['final_operation'] == "strip")	{	// only round
+			
+			echo round($row2["result_value"],$param['final_number']) . " " . $param["final_unit"];
+		    }
 		    elseif ( $param['final_operation'] == "/")		{ // kmgt + time
 
 			$num = explode ("/",$param["final_number"]);
 			$suf = explode ("/",$param["final_unit"]);
-
 
 			$num = array_reverse ($num,TRUE);
 			$suf = array_reverse ($suf, TRUE);
@@ -225,17 +236,13 @@ if ($result)	{
 			    if ($value > 1)	{
 				echo round($value,2) . " " . $suf[$f];
 				break;
-	    
 			    }
 			}
-
-//echo $row2["result_value"];
 		    }
 
-		    else	// empty final operation
+		    else	{	// empty final operation
 			echo $row2["result_value"] . $param["final_unit"];
-			
-		    
+		    }
     	    
     		    echo "</td>\n";
     	    
@@ -264,18 +271,56 @@ if ($result)	{
     		    echo "</tr>\n";
 	    }
 	    
-	    echo "</table><br/><br/>\n";
+	    echo "</table></td><td>\n";
 	    
-//	     if ($_SESSION['topx'] > 0 && !$not_all_data)
-//	    echo "Bude graf";
-		// make graph!!!
+	     if ($_SESSION['topx'] > 0 && !$not_all_data)	{
+	
+
+                $xid = "x" . uniqid();
+
+
+                print "<div><br/><br/><canvas id=\"pie_$xid\" width=\"500\" height=\"" . (20+$_SESSION['topx']*25 ). "\"></canvas>\n";
+                print "<script type='text/javascript'>\n";
+
+                $pie_labels = implode('","',$label);
+
+                $pie_values = implode(',',$graph);
+
+                $pie_title = 'dodelat';
+                print <<<EOF
+var $xid = document.getElementById("pie_$xid").getContext("2d");
+new Chart($xid, {
+    type: 'horizontalBar',
+    data: {
+        labels: ["$pie_labels"],
+        datasets: [{
+            backgroundColor: [ "#555555"],
+            data: [$pie_values]
+        }]
+    },
+    options: {
+        responsive: false,
+        legend: {
+            display: false
+         },
+        tooltipTemplate: "<%= label %>",
+    },
+});
+EOF;
+                print "</script></div>\n";
+// konec grafu	     
+	     
+	     
+	     
+	     
+	     }
 
 	}
-	    echo "</td>\n";
-	    $cols++;
+	    echo "</td></tr>\n";
+	//    $cols++;
     }
 
-    echo "</tr></table>\n\n";
+    echo "</table>\n\n";
 }
 else	{	
     echo "Please wait few poller cycles for data";
