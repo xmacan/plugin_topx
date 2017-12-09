@@ -157,7 +157,7 @@ if ($result)	{
 
 	// zjistime z tabulky, jak to mam sortovat
         $hash  = db_fetch_cell ("SELECT hash from data_template where id=" . $row['data_template_id']  );
-        $param = db_fetch_row ("SELECT sorting,operation,final_operation,final_unit,final_number from plugin_topx_source where hash='$hash'");
+        $param = db_fetch_row ("SELECT sorting,operation,final_operation,unit,final_unit,final_number from plugin_topx_source where hash='$hash'");
         
 	if ($_SESSION["sort"] == "reverse" && $param['sorting'] == "asc")
 	    $param['sorting'] = "desc";
@@ -190,7 +190,9 @@ if ($result)	{
     	    
     	    }
     	    
-    	    echo "<tr><th>Name</th><th>Hostname</th><th>" . $param['operation'] . "</th></tr>\n";
+    	    $not_all_data = false;
+    	    
+    	    echo "<tr><th>Name</th><th>Hostname</th><th>" . $param['unit'] . "</th></tr>\n";
 	    foreach($result2 as $row2)        {
 
 		$host = db_fetch_row ("select description,hostname from data_local as t1 left join data_template_data as t2 on t1.id=t2.local_data_id left join host on host.id=t1.host_id where t2.local_data_id =" . $row2["local_data_id"]);
@@ -206,7 +208,7 @@ if ($result)	{
 
 
 		    if ( $param['final_operation'] == "strip")	// only round
-			echo  round($row2["result_value"],$param['final_number']);
+			echo  round($row2["result_value"],$param['final_number']) . " " . $param["final_unit"];
 		    elseif ( $param['final_operation'] == "/")		{ // kmgt + time
 
 			$num = explode ("/",$param["final_number"]);
@@ -231,7 +233,7 @@ if ($result)	{
 		    }
 
 		    else	// empty final operation
-			echo $row2["result_value"] . $row["final_unit"];
+			echo $row2["result_value"] . $param["final_unit"];
 			
 		    
     	    
@@ -255,11 +257,18 @@ if ($result)	{
             		break;
         	    }   // end of switch
             
-        	    echo $row2['number_of_cycles'] < $cycle_required ? "<td>(waiting for data)</td>" : " ";  
+    		    if ( $row2['number_of_cycles'] < $cycle_required)	{
+        		echo  "<td>(waiting for data)</td>";
+        		$not_all_data = true;	
+        	    }  
     		    echo "</tr>\n";
 	    }
 	    
 	    echo "</table><br/><br/>\n";
+	    
+//	     if ($_SESSION['topx'] > 0 && !$not_all_data)
+//	    echo "Bude graf";
+		// make graph!!!
 
 	}
 	    echo "</td>\n";
