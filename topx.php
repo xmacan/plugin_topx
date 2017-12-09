@@ -164,7 +164,16 @@ if ($result)	{
 	elseif ($_SESSION["sort"] == "reverse" && $param['sorting'] == "desc")
 	    $param['sorting'] = "asc";
 
-	$sql = "SELECT * from plugin_topx_average where data_template_id=" . $row['data_template_id'] . " and age='" . $_SESSION["age"] . "' order by result_value " . $param['sorting'];
+// puvodni spravny	$sql = "SELECT * from plugin_topx_average where data_template_id=" . $row['data_template_id'] . " and age='" . $_SESSION["age"] . "' order by result_value " . $param['sorting'];
+// obcas tam ale byly polozky bez jmena, asi smazane veci
+
+    $sql = "SELECT t0.* from data_template_data as t2  
+    left join data_local as t1     on t1.id=t2.local_data_id 
+    left join plugin_topx_average as t0 on t0.local_data_id = t2.local_data_id 
+	    left join host on host.id=t1.host_id
+	     where t0.data_template_id=" . $row['data_template_id'] . " and t0.age='" . $_SESSION["age"] . "' order by t0.result_value " . $param['sorting'];
+
+//echo $sql;
 	if ($_SESSION["topx"] != 0) 
 	    $sql .= " limit ". $_SESSION["topx"];
 
@@ -181,56 +190,54 @@ if ($result)	{
     	    
     	    }
     	    
-    	    echo "<tr><th colspan=\"2\">Host</th><th>" . $param['operation'] . "</th></tr>\n";
+    	    echo "<tr><th>Name</th><th>Hostname</th><th>" . $param['operation'] . "</th></tr>\n";
 	    foreach($result2 as $row2)        {
 
 		$host = db_fetch_row ("select description,hostname from data_local as t1 left join data_template_data as t2 on t1.id=t2.local_data_id left join host on host.id=t1.host_id where t2.local_data_id =" . $row2["local_data_id"]);
-
-		$graph_id = db_fetch_cell ("select distinct(local_graph_id) from graph_templates_item 
+//		if ($host)	{
+		    $graph_id = db_fetch_cell ("select distinct(local_graph_id) from graph_templates_item 
 					left join data_template_rrd on (graph_templates_item.task_item_id=data_template_rrd.id) 
 					left join data_local on (data_template_rrd.local_data_id=data_local.id) 
 					left join data_template_data on (data_local.id=data_template_data.local_data_id) 
 					where data_template_data.local_data_id=" . $row2['local_data_id']) ;
-
-    		echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"] . "<td>"; // . round($row2["result_value"],2) . " " . $param['unit'];
-//echo "<br/>" . $param['final_operation'][0] . "<br/>\n";
-//		if ($param['final_unit'])		{
+    		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"] . "<td>"; // . round($row2["result_value"],2) . " " . $param['unit'];
 
 
-	    $pos = strpos ( $param['final_operation'], "/");
-	    if ($pos !== false)		    	{ 
-	    	    $cislo = explode("/", $param['final_operation']);
-    		    echo round($row2['result_value']/$cislo[1],2) . " " . $param['final_unit'] . "</td>";			    
-    	    }
-	    elseif ( $param['final_operation'] == "strip")	{
-		echo  round($row2["result_value"],2) . "</td>";
-	    }		    
-	    else	{ // default
-		echo  round($row2["result_value"],2) . " " . $param['unit'] . "</td>";
+		    $pos = strpos ( $param['final_operation'], "/");
+		    if ($pos !== false)		    	{ 
+	    		$cislo = explode("/", $param['final_operation']);
+    			echo round($row2['result_value']/$cislo[1],2) . " " . $param['final_unit'] . "</td>";			    
+    		    }
+		    elseif ( $param['final_operation'] == "strip")	{
+			echo  round($row2["result_value"],2) . "</td>";
+		    }		    
+		    else	{ // default
+			echo  round($row2["result_value"],2) . " " . $param['unit'] . "</td>";
 		    
-	    }
+		    }
 
     	    
-    		switch ($row2['age'])       {
-            	    case 'quarter':
-                	$cycle_required = $poller_interval == 300 ? 3 : 15;
-            	    break;
-            	    case 'hour':
-                	$cycle_required = $poller_interval == 300 ? 12 : 60;
-            	    break;
-            	    case 'day':
-                	$cycle_required = $poller_interval == 300 ? 288 : 1440;
-            	    break;
-            	    case 'week':
-                	$cycle_required = $poller_interval == 300 ? 2016 : 10080;
-            	    break;
-            	    case 'month':
-                	$cycle_required = $poller_interval == 300 ? 8640 : 43200;
-            	    break;
-        	}   // end of switch
+    		    switch ($row2['age'])       {
+            		case 'quarter':
+                	    $cycle_required = $poller_interval == 300 ? 3 : 15;
+            		break;
+            		case 'hour':
+                	    $cycle_required = $poller_interval == 300 ? 12 : 60;
+            		break;
+            		case 'day':
+                	    $cycle_required = $poller_interval == 300 ? 288 : 1440;
+            		break;
+            		case 'week':
+                	    $cycle_required = $poller_interval == 300 ? 2016 : 10080;
+            		break;
+            		    case 'month':
+                	    $cycle_required = $poller_interval == 300 ? 8640 : 43200;
+            		break;
+        	    }   // end of switch
             
-        	echo $row2['number_of_cycles'] < $cycle_required ? "<td>(waiting for data)</td>" : " ";  
-    		echo "</tr>\n";
+        	    echo $row2['number_of_cycles'] < $cycle_required ? "<td>(waiting for data)</td>" : " ";  
+    		    echo "</tr>\n";
+//    		} // end of if $host
 	    }
 	    
 	    echo "</table><br/><br/>\n";
