@@ -1,20 +1,9 @@
-udelat lepsi vypis a final value - at muzu udelat human readable, takze treba:
-- vteriny na hodiny, dny, ....
-- human readable a ono to doplni [k,g,b,..] a moje jednotka bude jen bit
+themes
+hook do delete host/data source - odmazat me hodnoty
 
-kontrolovat /var/log/cacti/log
-
-
-
-TODO:
------
 topx with user permission? Now I'm displaying all host
+
 Maybe display exact ds name in topx table not only hostname
-add trends in time?
 
+chart.js - display top5 + all remaining together
 
-Errors:
--------
-Traffic - neprevadim na megabity apod
-hard drive space - chybi nazvy vsech hostu, vsech 5 polozek je stejncyh
-MultiCPU avg - mam tam load=load a jednotky load
