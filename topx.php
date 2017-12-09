@@ -208,31 +208,32 @@ if ($result)	{
 		    if ( $param['final_operation'] == "strip")	// only round
 			echo  round($row2["result_value"],$param['final_number']);
 		    elseif ( $param['final_operation'] == "/")		{ // kmgt + time
+
 			$num = explode ("/",$param["final_number"]);
 			$suf = explode ("/",$param["final_unit"]);
-			// !!!! tady jsem skoncil
-			// udelat to ve smycce od nejvetsiho, kdyz bude vysledek vetsi nez 1, tak zaokrouhlit a zobrazit + pridat spravne jednotky
+
+
+			$num = array_reverse ($num,TRUE);
+			$suf = array_reverse ($suf, TRUE);
+
+			for ($f = count($num) -1;$f >=0;$f--)	{
+			
+			    $value = $row2["result_value"]/$num[$f];
+
+			    if ($value > 1)	{
+				echo round($value,2) . " " . $suf[$f];
+				break;
+	    
+			    }
+			}
+
+//echo $row2["result_value"];
 		    }
+
 		    else	// empty final operation
 			echo $row2["result_value"] . $row["final_unit"];
 			
 		    
-
-
-/*
-		    $pos = strpos ( $param['final_operation'], "/");
-		    if ($pos !== false)		    	{ 
-	    		$cislo = explode("/", $param['final_operation']);
-    			echo round($row2['result_value']/$cislo[1],2) . " " . $param['final_unit'] . "</td>";			    
-    		    }
-		    elseif ( $param['final_operation'] == "strip")	{
-			echo  round($row2["result_value"],2) . "</td>";
-		    }		    
-		    else	{ // default
-			echo  round($row2["result_value"],2) . " " . $param['unit'] . "</td>";
-		    
-		    }
-*/
     	    
     		    echo "</td>\n";
     	    
