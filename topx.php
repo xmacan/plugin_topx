@@ -157,7 +157,7 @@ if ($result)	{
 
 	// zjistime z tabulky, jak to mam sortovat
         $hash  = db_fetch_cell ("SELECT hash from data_template where id=" . $row['data_template_id']  );
-        $param = db_fetch_row ("SELECT sorting,operation,unit,final_operation,final_unit from plugin_topx_source where hash='$hash'");
+        $param = db_fetch_row ("SELECT sorting,operation,final_operation,final_unit,final_number from plugin_topx_source where hash='$hash'");
         
 	if ($_SESSION["sort"] == "reverse" && $param['sorting'] == "asc")
 	    $param['sorting'] = "desc";
@@ -194,15 +194,32 @@ if ($result)	{
 	    foreach($result2 as $row2)        {
 
 		$host = db_fetch_row ("select description,hostname from data_local as t1 left join data_template_data as t2 on t1.id=t2.local_data_id left join host on host.id=t1.host_id where t2.local_data_id =" . $row2["local_data_id"]);
-//		if ($host)	{
 		    $graph_id = db_fetch_cell ("select distinct(local_graph_id) from graph_templates_item 
 					left join data_template_rrd on (graph_templates_item.task_item_id=data_template_rrd.id) 
 					left join data_local on (data_template_rrd.local_data_id=data_local.id) 
 					left join data_template_data on (data_local.id=data_template_data.local_data_id) 
 					where data_template_data.local_data_id=" . $row2['local_data_id']) ;
-    		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"] . "<td>"; // . round($row2["result_value"],2) . " " . $param['unit'];
+    		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"];
+    		    echo "<td>";
+
+		    // hodnotu mam v $row['result_value']
 
 
+		    if ( $param['final_operation'] == "strip")	// only round
+			echo  round($row2["result_value"],$param['final_number']);
+		    elseif ( $param['final_operation'] == "/")		{ // kmgt + time
+			$num = explode ("/",$param["final_number"]);
+			$suf = explode ("/",$param["final_unit"]);
+			// !!!! tady jsem skoncil
+			// udelat to ve smycce od nejvetsiho, kdyz bude vysledek vetsi nez 1, tak zaokrouhlit a zobrazit + pridat spravne jednotky
+		    }
+		    else	// empty final operation
+			echo $row2["result_value"] . $row["final_unit"];
+			
+		    
+
+
+/*
 		    $pos = strpos ( $param['final_operation'], "/");
 		    if ($pos !== false)		    	{ 
 	    		$cislo = explode("/", $param['final_operation']);
@@ -215,7 +232,9 @@ if ($result)	{
 			echo  round($row2["result_value"],2) . " " . $param['unit'] . "</td>";
 		    
 		    }
-
+*/
+    	    
+    		    echo "</td>\n";
     	    
     		    switch ($row2['age'])       {
             		case 'quarter':
@@ -237,7 +256,6 @@ if ($result)	{
             
         	    echo $row2['number_of_cycles'] < $cycle_required ? "<td>(waiting for data)</td>" : " ";  
     		    echo "</tr>\n";
-//    		} // end of if $host
 	    }
 	    
 	    echo "</table><br/><br/>\n";
@@ -250,7 +268,7 @@ if ($result)	{
     echo "</tr></table>\n\n";
 }
 else	{	
-    echo "No data";
+    echo "Please wait few poller cycles for data";
 }
 
 
