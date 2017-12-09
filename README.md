@@ -8,7 +8,7 @@ displays hights and lows (example: most utilization CPU, interface traffic, ..)
 Petr Macek (petr.macek@kostax.cz)
 
 ## Screenshot
-![topx_0 4](https://user-images.githubusercontent.com/26485719/33798484-77f3a780-dd19-11e7-9cfc-f9b79704c74a.png)
+![topx_0 4](https://user-images.githubusercontent.com/26485719/33798513-1a7a4dba-dd1a-11e7-8ffe-f7f76c5124ba.png)
 
 ## Installation
 Copy directory topx to plugins directory
@@ -28,6 +28,11 @@ If you find a problem, let me know via github or https://forums.cacti.net/viewto
    
 
 ## Changelog
+ 	--- 0.4
+		Add chartJS graphs
+		Add human readable values 
+		Fix empty source
+
 	--- 0.3
 		rewrite for cacti 1.x
 
