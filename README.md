@@ -28,6 +28,8 @@ If you find a problem, let me know via github or https://forums.cacti.net/viewto
    
 
 ## Changelog
+	--- 0.5
+		Add theme support
  	--- 0.4
 		Add chartJS graphs
 		Add human readable values 

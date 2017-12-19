@@ -64,13 +64,14 @@ function applyViewAgeFilterChange(objForm) {
 
 html_start_box("<strong>TopX</strong>", "100%", $colors["header"], "3", "center", "");
 
+
 ?>
 
 <tr bgcolor="#<?php print $colors["panel"];?>">
  <td>
   <form name="form_topx" action="topx.php">
    <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
+    <tr class="navigate_form">
      <td nowrap style='white-space: nowrap;' width="50">
       Age:&nbsp;
      </td>
@@ -153,7 +154,7 @@ if ($result)	{
 	$number_of_ds = db_fetch_cell ("select count(id) from data_template_data where local_data_template_data_id !=0 and data_template_id = " . $row['data_template_id']);
 
     
-	echo "<h3>" . $row['name'] . " (total " . $number_of_ds . "):</h3>\n";
+	echo "<h3 class=\"topx_h3\">" . $row['name'] . " (total " . $number_of_ds . "):</h3>\n";
 
 	// zjistime z tabulky, jak to mam sortovat
         $hash  = db_fetch_cell ("SELECT hash from data_template where id=" . $row['data_template_id']  );
@@ -279,7 +280,7 @@ if ($result)	{
                 $xid = "x" . uniqid();
 
 
-                print "<div><br/><br/><canvas id=\"pie_$xid\" width=\"500\" height=\"" . (20+$_SESSION['topx']*25 ). "\"></canvas>\n";
+                print "<div class=\"topx_graph\"><br/><br/><canvas id=\"pie_$xid\" width=\"500\" height=\"" . (20+$_SESSION['topx']*25 ). "\"></canvas>\n";
                 print "<script type='text/javascript'>\n";
 
                 $pie_labels = implode('","',$label);
