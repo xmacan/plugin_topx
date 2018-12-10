@@ -259,7 +259,8 @@ function topx_poller_bottom () {
 		    $cycle_required = $poller_interval == 300 ? 8640 : 43200;
     		break;
     	    }
-
+		
+	    $avg_value = '';
             $cycle_real = $item['number_of_cycles'] < $cycle_required ? $item['number_of_cycles'] : $cycle_required;            
 	    $operation = db_fetch_cell ("select operation from data_template_data left join data_template on data_template.id = data_template_data.data_template_id 
 					    left join plugin_topx_source on plugin_topx_source.hash=data_template.hash where local_data_id=" . $item['local_data_id']); 
@@ -294,7 +295,7 @@ function topx_poller_bottom () {
 		
 
 	    }
-            db_execute("UPDATE plugin_topx_average set result_value=$avg_value, number_of_cycles=number_of_cycles+1 where local_data_id=" . $item['local_data_id'] ." and age='" . $item['age'] . "'");
+            db_execute("UPDATE plugin_topx_average set result_value=" . $avg_value . ", number_of_cycles=number_of_cycles+1 where local_data_id=" . $item['local_data_id'] ." and age='" . $item['age'] . "'");
 	}
     }
     $dt_count = db_fetch_cell("select count(distinct data_template_id) from plugin_topx_average");
