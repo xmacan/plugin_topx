@@ -14,7 +14,6 @@ $ar_age = array ("quarter" => "15 minutes", "hour" => "Last Hour", "day" => "Las
 $ar_topx = array ("1" => "Top 1", "3" => "Top 3", "5" => "Top 5", "10" => "Top 10", "0" => "All"); 
 $ar_sort = array ("normal" => "normal", "reverse" => "reverse"); 
 
-
 /* if the user pushed the 'clear' button */
 if (get_request_var('clear_x')) {
     unset($_SESSION["age"]);
@@ -214,6 +213,8 @@ if ($result)	{
     		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"];
     		    echo "<td>";
 
+
+			
 		    // hodnotu mam v $row['result_value']
 		    array_push($graph,round($row2['result_value'],2));
 		    array_push($label,$host['description']);
@@ -244,7 +245,8 @@ if ($result)	{
 		    else	{	// empty final operation
 			echo $row2["result_value"] . $param["final_unit"];
 		    }
-    	    
+
+    	
     		    echo "</td>\n";
     	    
     		    switch ($row2['age'])       {
@@ -271,6 +273,8 @@ if ($result)	{
         	    }  
     		    echo "</tr>\n";
 	    }
+
+		$jednotky = $param['final_unit'];
 	    
 	    echo "</table></td><td>\n";
 	    
@@ -304,6 +308,17 @@ new Chart($xid, {
         legend: {
             display: false
          },
+scales: {
+		    xAxes: [{
+			display: true,
+			scaleLabel: {
+			    display: true,
+			    labelString: '$jednotky'
+			}
+		    }], 
+		    },        
+         
+         
         tooltipTemplate: "<%= label %>",
     },
 });
