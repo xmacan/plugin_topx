@@ -1,3 +1,5 @@
+readme - blbe enteruju
+
 themes
 hook do delete host/data source - odmazat me hodnoty
 
@@ -6,3 +8,4 @@ topx with user permission? Now I'm displaying all host
 Maybe display exact ds name in topx table not only hostname
 
 
+add logged_user (win), memory (win)?
