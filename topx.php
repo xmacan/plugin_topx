@@ -138,10 +138,12 @@ html_end_box();
 // tady zjistit, jake vsechny typy mam (cpu, hdd, ...)
 $result = db_fetch_assoc ("select distinct data_template_id, name from plugin_topx_average left join data_template on data_template_id = data_template.id");
 if ($result)	{
+
     echo "<table><tr>\n";
     $cols = 1;
 
     foreach($result as $row)        {
+
 	if ($cols > 2)	{
 	    echo "</tr>\n\n<tr><td>\n";
 	    $cols = 1;    
@@ -210,7 +212,7 @@ if ($result)	{
 					left join data_local on (data_template_rrd.local_data_id=data_local.id) 
 					left join data_template_data on (data_local.id=data_template_data.local_data_id) 
 					where data_template_data.local_data_id=" . $row2['local_data_id']) ;
-    		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"];
+    		    echo "<tr><td><a href=\"" .  htmlspecialchars($config['url_path']) . "graphs.php?action=graph_edit&id=$graph_id\">" . $host["description"] . "</a></td><td>" . $host["hostname"] . "</td>";
     		    echo "<td>";
 
 
@@ -232,11 +234,15 @@ if ($result)	{
 			$suf = array_reverse ($suf, TRUE);
 
 			for ($f = count($num) -1;$f >=0;$f--)	{
-			
+
 			    $value = $row2["result_value"]/$num[$f];
 
 			    if ($value > 1)	{
 				echo round($value,2) . " " . $suf[$f];
+				break;
+			    }
+			    else {
+				echo $value;
 				break;
 			    }
 			}
