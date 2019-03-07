@@ -61,12 +61,12 @@ function applyViewAgeFilterChange(objForm) {
 </script>
 <?php
 
-html_start_box("<strong>TopX</strong>", "100%", $colors["header"], "3", "center", "");
+html_start_box("<strong>TopX</strong>", "100%", '', "3", "center", "");
 
 
 ?>
 
-<tr bgcolor="#<?php print $colors["panel"];?>">
+<tr>
  <td>
   <form name="form_topx" action="topx.php">
    <table width="100%" cellpadding="0" cellspacing="0">
