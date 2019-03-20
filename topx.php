@@ -27,6 +27,10 @@ if ( isset_request_var ('age') )
 if (!isset($_SESSION["age"]))
     $_SESSION["age"] = "quarter";
 
+// sometimes is in $_SESSION['age'] nonsense (like 168)
+if (!array_key_exists ($_SESSION['age'],$ar_age))
+    $_SESSION['age'] = 'quarter';
+
 
 if ( isset_request_var ('topx') && array_key_exists (get_request_var ('topx'), $ar_topx)) 
     $_SESSION['topx'] = get_filter_request_var('topx');
@@ -135,6 +139,7 @@ foreach ($ar_sort as $key=>$value)	{
 html_end_box();
 
 
+
 // tady zjistit, jake vsechny typy mam (cpu, hdd, ...)
 $result = db_fetch_assoc ("select distinct data_template_id, name from plugin_topx_average left join data_template on data_template_id = data_template.id");
 if ($result)	{
@@ -160,7 +165,7 @@ if ($result)	{
 	// zjistime z tabulky, jak to mam sortovat
         $hash  = db_fetch_cell ("SELECT hash from data_template where id=" . $row['data_template_id']  );
         $param = db_fetch_row ("SELECT sorting,operation,final_operation,unit,final_unit,final_number from plugin_topx_source where hash='$hash'");
-        
+
 	if ($_SESSION["sort"] == "reverse" && $param['sorting'] == "asc")
 	    $param['sorting'] = "desc";
 	elseif ($_SESSION["sort"] == "reverse" && $param['sorting'] == "desc")
@@ -175,9 +180,10 @@ if ($result)	{
 	    left join host on host.id=t1.host_id
 	     where t0.data_template_id=" . $row['data_template_id'] . " and t0.age='" . $_SESSION["age"] . "' order by t0.result_value " . $param['sorting'];
 
-//echo $sql;
 	if ($_SESSION["topx"] != 0) 
 	    $sql .= " limit ". $_SESSION["topx"];
+	    
+	    echo $sql;
 
 	$result2 = db_fetch_assoc ($sql);
         if ($result2)	{ 
