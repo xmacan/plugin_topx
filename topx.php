@@ -183,7 +183,7 @@ if ($result)	{
 	if ($_SESSION["topx"] != 0) 
 	    $sql .= " limit ". $_SESSION["topx"];
 	    
-	    echo $sql;
+	    //echo $sql;
 
 	$result2 = db_fetch_assoc ($sql);
         if ($result2)	{ 
