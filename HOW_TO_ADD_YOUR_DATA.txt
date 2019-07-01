@@ -1,3 +1,9 @@
+!!! It isn't possible to add data/arithmetical operation now :-(
+!!! because using native DSSTATS instead of my code
+!!! My code did the same thing like dsstats but less effective
+!!! I will try implement this again
+
+
 HOW TO ADD ANOTHER DATA SOURCE:
 -------------------------------
 

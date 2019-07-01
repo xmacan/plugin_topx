@@ -1,8 +1,8 @@
 # plugin_topx for Cacti
 
 ## TopX
-Topx allows you to add an arithmetic operation or combine data source (example: discard and error traffic together, ..) and 
-displays hights and lows (example: most utilization CPU, interface traffic, ..)
+Displays hights and lows (example: most utilization CPU, interface traffic, ..)
+~~Topx allows you to add an arithmetic operation or combine data source (example: discard and error traffic together, ..)~~
 
 ## Author
 Petr Macek (petr.macek@kostax.cz)
@@ -13,13 +13,11 @@ Petr Macek (petr.macek@kostax.cz)
 ## Installation
 Copy directory topx to plugins directory
 Check file permission (Linux/unix - readable for www server)
-Enable plugin (Console -> Plugin management
-Wait at least 3 poller cycles for result
+Enable plugin (Console -> Plugin management)
     
 ## Upgrade    
 Copy and rewrite files
 Check file permission (Linux/unix - readable for www server)
-If you want to preserve old data you must comment all in  plugin_topx_uninstall function in setup.php!
 Disable and deinstall old version (Console -> Plugin management) 
 Install and enable new version (Console -> Plugin management) 
     
@@ -30,6 +28,9 @@ If you find a problem, let me know via github or https://forums.cacti.net/viewto
 ## Changelog
 	--- 0.5
 		Add theme support
+		Remove my data source poller code, using native dsstats
+		Remove arithmetical operation (dsstats doesn't support this)
+		 
  	--- 0.4
 		Add chartJS graphs
 		Add human readable values 

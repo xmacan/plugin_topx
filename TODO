@@ -1,11 +1,11 @@
-readme - blbe enteruju
 
-themes
-hook do delete host/data source - odmazat me hodnoty
+mozna  bych mel delat svuj poller_bottom, ktery bude fungovat podobne jako driv a u  nekterych dat udela prumery usage/all, traffic/errors
+mozna to nemusi byt poller_bottom, ale mozna az pri zobrazovani, kdyz je to treba hdd_used
+bude potreba resit i jednotky, mikrotik uptime ted mam jako 1.94G
+
+takze udelat tabulku, kde budou uvedene vyjimky a jak s nimi pracovat, nemusi to asi ani byt v polleru, staci pri zobrazovani
+
 
 topx with user permission? Now I'm displaying all host
 
-Maybe display exact ds name in topx table not only hostname
 
-
-add logged_user (win), memory (win)?
