@@ -89,7 +89,6 @@ if (!isset($_SESSION['age']))
 
 if ( isset_request_var ('topx') && array_key_exists (get_request_var ('topx'), $ar_topx))
     $_SESSION['topx'] = get_filter_request_var('topx');
-
 if (!isset($_SESSION['topx']))
     $_SESSION['topx'] = 5;
 
@@ -148,9 +147,9 @@ foreach ($ar_ds as $ds)	{
 <?php
 foreach ($ar_age as $key=>$value)	{
     if ($_SESSION['age'] == $key)
-	print '<option value="$key" selected="selected">' . $value . '</option>';
+	print '<option value="' . $key . '" selected="selected">' . $value . '</option>';
     else    
-	print '<option value="$key">' . $value .'</option>';
+	print '<option value="' . $key . '">' . $value .'</option>';
 }
 ?>
 
@@ -165,9 +164,9 @@ foreach ($ar_age as $key=>$value)	{
 <?php
 foreach ($ar_topx as $key=>$value)	{
     if ($_SESSION['topx'] == $key)
-	print '<option value="$key" selected="selected">' . $value . '</option>';
+	print '<option value="' . $key . '" selected="selected">' . $value . '</option>';
     else
-	print '<option value="$key">' . $value . '</option>';
+	print '<option value="' . $key . '">' . $value . '</option>';
 }
 ?>
 
@@ -181,9 +180,9 @@ foreach ($ar_topx as $key=>$value)	{
 <?php
 foreach ($ar_sort as $key=>$value)	{
     if ($_SESSION['sort'] == $key)
-	print '<option value="$key" selected="selected">' . $value . '</option>';
+	print '<option value="' . $key . '" selected="selected">' . $value . '</option>';
     else
-	print '<option value="$key">' . $value . '</option>';
+	print '<option value="' . $key . '">' . $value . '</option>';
 }
 ?>
       </select>
@@ -217,10 +216,10 @@ switch ($_SESSION['age'])	{
     case 'week':
 	$query .= 'data_source_stats_weekly ';
     break;
-    case 'monthly':
+    case 'month':
 	$query .= 'data_source_stats_monthly ';
     break;
-    case 'yearly':
+    case 'year':
 	$query .= 'data_source_stats_yearly ';
     break;
 }  
@@ -233,7 +232,7 @@ $query .= $_SESSION['sort'] == 'normal' ? 'ASC ' : 'DESC ';
 if ($_SESSION['topx'] > 0)    
     $query .= 'LIMIT ' . $_SESSION['topx'];
 
-// print $columns . ' ' . $query;
+// print 'SELECT ' . $columns . ' ' . $query;
 
 $graph = array();
 $label = array();
