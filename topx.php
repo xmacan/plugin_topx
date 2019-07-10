@@ -254,7 +254,7 @@ foreach ($result as $row)	{
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
                                         WHERE data_template_data.local_data_id=' . $row['local_data_id']);
 
-    print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=$graph_id">' . $row['name'] . '</a></td>' .
+    print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
 	 '<td>' . human_readable($row['value']) . '</td>' .
 	 '<td>' . human_readable($row['peak']) . '</td>';
 
