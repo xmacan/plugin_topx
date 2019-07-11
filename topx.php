@@ -201,7 +201,7 @@ foreach ($ar_sort as $key=>$value)	{
 
 html_end_box();
 
-print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . get_request_var('ds')) . '</h3>';
+print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
 
 $columns = " t1.local_data_id as local_data_id, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as value, t2.peak as peak ";
 $query = ' FROM data_template_data AS t1 LEFT JOIN ';
