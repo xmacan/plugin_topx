@@ -43,15 +43,20 @@ if (read_config_option('dsstats_enable') != 'on')	{
 }
 
 
-function human_readable($size) {
-    if ($size > 999)	{
-	for($i = 0; ($size / 1024) > 0.9; $i++, $size /= 1024) {}
-	return round($size, [2,2,2,2,2,3,3,4,4][$i]).[' ','k','M','G','T','P','E','Z','Y'][$i];
+function human_readable ($bytes, $precision = null, $decadic = false)	{
+
+    $BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
+    $BYTE_PRECISION = array(0, 0, 1, 2, 2, 3, 3, 4, 4);
+    if ($decadic) {
+        $BYTE_NEXT = 1000;
+    } else {
+        $BYTE_NEXT = 1024;
     }
-    else	{
-	return (round($size,3));
-    }
+
+	for ($i = 0; ($bytes / $BYTE_NEXT) >= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
+        return round($bytes, is_null($precision) ? $BYTE_PRECISION[$i] : $precision) . $BYTE_UNITS[$i];
 }
+
 
 
 
