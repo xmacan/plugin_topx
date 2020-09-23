@@ -42,7 +42,6 @@ if (read_config_option('dsstats_enable') != 'on')	{
     die();
 }
 
-
 function human_readable ($bytes, $precision = null, $decadic = false)	{
 
     $BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
@@ -57,23 +56,9 @@ function human_readable ($bytes, $precision = null, $decadic = false)	{
         return round($bytes, is_null($precision) ? $BYTE_PRECISION[$i] : $precision) . $BYTE_UNITS[$i];
 }
 
-
-
-
-$xar_ds = db_fetch_assoc ('SELECT distinct(t1.name) as dsname,t1.id as dsid, count(t1.id) as dscount FROM data_template AS t1 
-			    LEFT JOIN data_template_data AS t2 ON t1.id=t2.data_template_id 
-			    GROUP BY data_template_id'); 
-
-foreach ($xar_ds as $ds)	{
-    $tmp = $ds['dsid'];
-    $ar_ds[$tmp]['key']   = $ds['dsid'];
-    $ar_ds[$tmp]['name']  = $ds['dsname'];
-    $ar_ds[$tmp]['count'] = $ds['dscount'];
-}
-
 $ar_age = array ('hour' => 'Last Hour', 'day' => 'Last Day', 'week' => 'Last Week', 'month' => 'Last Month', 'year' => 'Last year');
 $ar_topx = array ('5' => 'Top 5', '10' => 'Top 10', '20' => 'Top 20', '50' => 'Top 50', '0' => 'All');
-$ar_sort = array ('normal' => 'normal', 'reverse' => 'reverse');
+$ar_sort = array ('asc' => 'Normal', 'desc' => 'Reverse');
 
 /* if the user pushed the 'clear' button */
 if (get_request_var('clear_x')) {
@@ -82,10 +67,55 @@ if (get_request_var('clear_x')) {
     unset($_SESSION['sort']);
 }
 
-if ( isset_request_var ('ds') && array_key_exists (get_request_var ('ds'), $ar_ds))
+
+/*
+$xar_ds = db_fetch_assoc ('SELECT distinct(t1.name) as dsname,t1.id as dsid, count(t1.id) as dscount FROM data_template AS t1 
+			    LEFT JOIN data_template_data AS t2 ON t1.id=t2.data_template_id 
+			    GROUP BY data_template_id'); 
+*/
+
+// nejprve podporovane
+$ds_sup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("supported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
+ FROM data_template AS t1
+ JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
+ JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
+ GROUP BY data_template_id ORDER BY dsname');
+
+
+$ds_unsup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("unsupported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "false" AS sup 
+ FROM data_template AS t1
+ JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
+ GROUP BY data_template_id ORDER BY dsname'
+	);
+	
+	
+$ds_all = array_merge ($ds_sup,$ds_unsup);
+
+foreach ($ds_all as $ds)	{
+	if ($ds['sup'] == 'true') {
+		$tmp = -1 * $ds['dsid'];
+
+	} else {
+	   $tmp = $ds['dsid'];
+
+	}
+    $ar_ds[$tmp]['key']   = $tmp;
+    $ar_ds[$tmp]['name']  = $ds['dsname'];
+    $ar_ds[$tmp]['count'] = $ds['dscount'];
+    $ar_ds[$tmp]['supported'] = $ds['sup'];
+}
+
+
+//var_dump($ar_ds);
+
+
+
+
+if ( isset_request_var ('ds') && array_key_exists (get_request_var ('ds'), $ar_ds))	
     $_SESSION['ds'] = get_filter_request_var('ds');
-if (!isset($_SESSION['ds']))
+if (!isset($_SESSION['ds']))	{
     $_SESSION['ds'] = key($ar_ds);
+}
 
 if ( isset_request_var ('age') && array_key_exists (get_request_var ('age'), $ar_age))
     $_SESSION['age'] = get_request_var ('age');
@@ -99,8 +129,10 @@ if (!isset($_SESSION['topx']))
 
 if ( isset_request_var ('sort') && array_key_exists (get_request_var ('sort'), $ar_sort))
     $_SESSION['sort'] = get_request_var ('sort');
-if (!isset($_SESSION['sort']) || !is_string($_SESSION['sort']))
-    $_SESSION['sort'] = 'normal';
+if (!isset($_SESSION['sort']))
+	$_SESSION['sort'] = 'desc';
+
+
 ?>
 
 <script type="text/javascript">
@@ -229,45 +261,110 @@ switch ($_SESSION['age'])	{
     break;
 }  
     
+$id = $_SESSION['ds'];
+if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')
+	$id *= -1;     
+    
 $query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-    WHERE t1.data_template_id = ' . $_SESSION['ds'] .
+    WHERE t1.data_template_id = ' . $id .
     ' ORDER BY t2.average ';
     
-$query .= $_SESSION['sort'] == 'normal' ? 'ASC ' : 'DESC ';
+$query .= $_SESSION['sort'] . ' ' ;
+
 if ($_SESSION['topx'] > 0)    
     $query .= 'LIMIT ' . $_SESSION['topx'];
 
-// print 'SELECT ' . $columns . ' ' . $query;
+print 'SELECT ' . $columns . ' ' . $query;
+
 
 $graph = array();
 $label = array();
 
-$avg = round(db_fetch_cell ('SELECT avg(average)' . $query),2);
+
+
+////////// supported
+if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
+
+	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
+		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
+		array($id));
+	
+	if (strpos($source['operation'],'=') !== false)	{	// only one value
+
+/////
+	$avg = round(db_fetch_cell ('SELECT avg(average)' . $query),2);
 		
-array_push($label,'Average all');
-array_push($graph,$avg);
+	array_push($label,'Average all');
+	array_push($graph,$avg);
+		$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
 
-$result = db_fetch_assoc("SELECT $columns $query");
+	$result = db_fetch_assoc("SELECT $columns $query");
 
-print '<table  class="topx_table">';
-print '<tr><th>Data source</th><th>Avg. value</th><th>Peak</th></tr>';
+	print '<table  class="topx_table">';
+	print '<tr><th>Data source</th><th>Avg. value [' . $source['final_unit'] . ']</th><th>Peak [' . $source['final_unit'] . ']</th></tr>';
 
-foreach ($result as $row)	{
-    $graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
+	foreach ($result as $row)	{
+    		$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
                                         LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
                                         LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
                                         WHERE data_template_data.local_data_id=' . $row['local_data_id']);
 
-    print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-	 '<td>' . human_readable($row['value']) . '</td>' .
-	 '<td>' . human_readable($row['peak']) . '</td>';
+		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
+			'<td>' . human_readable($row['value']) . '</td>' .
+			'<td>' . human_readable($row['peak'])  . '</td>';
 
-    array_push ($graph,$row['value']);
-    array_push ($label,$row['name']);
+    		array_push ($graph,$row['value']);
+    		array_push ($label,$row['name']);
+	}
+echo '<tr><td>Average all DS</td><td colspan="2">' . $avg . '</td></tr>';
+
+	print '</table>';
+
+
+///////
+	
+	}
+	else	{
+		print 'comming soon';
+	
+	}
+
+
 }
+else	{	// unsupported
 
-print '</table>';
+
+	$avg = round(db_fetch_cell ('SELECT avg(average)' . $query),2);
+		
+	array_push($label,'Average all');
+	array_push($graph,$avg);
+	$pie_title = 'TODO :-)'; // !!!! dodelat
+
+
+	$result = db_fetch_assoc("SELECT $columns $query");
+
+	print '<table  class="topx_table">';
+	print '<tr><th>Data source</th><th>Avg. value</th><th>Peak</th></tr>';
+
+	foreach ($result as $row)	{
+    		$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
+                                        LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
+                                        LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
+                                        LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
+                                        WHERE data_template_data.local_data_id=' . $row['local_data_id']);
+
+		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
+			'<td>' . human_readable($row['value']) . '</td>' .
+			'<td>' . human_readable($row['peak']) . '</td>';
+
+    		array_push ($graph,$row['value']);
+    		array_push ($label,$row['name']);
+	}
+
+	print '</table>';
+
+}
 
 $xid = 'x' . uniqid();
 
@@ -276,9 +373,10 @@ print "<script type='text/javascript'>";
 
 $pie_labels = implode('","',$label);
 $pie_values = implode(',',$graph);
-$pie_title = 'todo :-)';
+//$pie_title = 'todo :-)';
 
 print <<<EOF
+
 var $xid = document.getElementById("pie_$xid").getContext("2d");
 new Chart($xid, {
     type: 'horizontalBar',
@@ -287,7 +385,7 @@ new Chart($xid, {
         datasets: [{
             backgroundColor: [ "#555555"],
             data: [$pie_values]
-        }]
+        }],
     },
     options: {
         responsive: false,
@@ -299,13 +397,14 @@ scales: {
 			display: true,
 			scaleLabel: {
 			    display: true,
-			    labelString: 'todo'
+			    labelString: "$pie_title"
 			}
 		    }], 
 		    },        
          
          
         tooltipTemplate: "<%= label %>",
+        
     },
 });
 EOF;
@@ -313,8 +412,11 @@ EOF;
 print "</script></div>";
 // end of graph	     
 
+
+
 print '<br/><br/>';
 print 'DS stats last major run time: ' .  read_config_option('dsstats_last_major_run_time') . '<br/>';    
 print 'DS stats last daily run time: ' .  read_config_option('dsstats_last_daily_run_time') . '<br/>';    
+
 
 bottom_footer();

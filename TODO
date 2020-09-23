@@ -1,9 +1,34 @@
+u average all udelat horizontalni caru? Umim to v tomhle grafu?
 
-mozna  bych mel delat svuj poller_bottom, ktery bude fungovat podobne jako driv a u  nekterych dat udela prumery usage/all, traffic/errors
-mozna to nemusi byt poller_bottom, ale mozna az pri zobrazovani, kdyz je to treba hdd_used
+
+tady mam jedinecna data
+select * from data_source_stats_hourly_last where local_data_id=11327;
+select * from data_template_data where local_data_id=11327;
+
+A ve starem kodu uz mam:
+// zjistuju, ktera data budu zkoumat
+$result = db_fetch_assoc ("select distinct (data_template.id) as id from plugin_topx_source join data_template
+on data_template.hash = plugin_topx_source.hash");
+
+        foreach($result as $row)        {
+   $in .= $row["id"] . ",";
+}
+
+
+
+udelam to tak, ze v poller bottom si vytahnu z tabulky ...hourly_last data dle pozadovanych hashu a ty zpracuju
+- asi nepotrebuju ani poller, muzu to rovnou brat z tabulek, viz nize
+
+ale jak je zpracuju? Ja ty hodnoty mozna ukladat nemusim, ... muzu brat z db - hodina, den, tyde, mesic, rok
+ano, udelat to tak a jeste muzu pridat last 5 minut
+
+
+asi by bylo dobre u tech supported mit vychozi order by - mam to v db, ale jeste to cele prekopat
+
+
+
 bude potreba resit i jednotky, mikrotik uptime ted mam jako 1.94G
 
-takze udelat tabulku, kde budou uvedene vyjimky a jak s nimi pracovat, nemusi to asi ani byt v polleru, staci pri zobrazovani
 
 
 topx with user permission? Now I'm displaying all host
