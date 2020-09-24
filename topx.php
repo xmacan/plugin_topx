@@ -54,6 +54,7 @@ function human_readable ($bytes, $precision = null, $decadic = false)	{
 
 	for ($i = 0; ($bytes / $BYTE_NEXT) >= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
         return round($bytes, is_null($precision) ? $BYTE_PRECISION[$i] : $precision) . $BYTE_UNITS[$i];
+        
 }
 
 $ar_age = array ('hour' => 'Last Hour', 'day' => 'Last Day', 'week' => 'Last Week', 'month' => 'Last Month', 'year' => 'Last year');
@@ -369,14 +370,16 @@ else	{	// unsupported
 $xid = 'x' . uniqid();
 
 print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="700" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
+print "<script type='text/javascript' src='js/chartjs-plugin-annotation.min.js'></script>";
+
 print "<script type='text/javascript'>";
 
 $pie_labels = implode('","',$label);
 $pie_values = implode(',',$graph);
 //$pie_title = 'todo :-)';
 
-print <<<EOF
 
+print <<<EOF
 var $xid = document.getElementById("pie_$xid").getContext("2d");
 new Chart($xid, {
     type: 'horizontalBar',
@@ -404,6 +407,18 @@ scales: {
          
          
         tooltipTemplate: "<%= label %>",
+      annotation: {
+        annotations: [
+          {
+            type: "line",
+            mode: "vertical",
+            scaleID: "x-axis-0",
+            value: $avg,
+            borderColor: "red",
+          }
+        ]
+      },
+
         
     },
 });
