@@ -44,20 +44,22 @@ function topx_setup_database()	{
 	$data['columns'][] = array('name' => 'final_operation', 'type' => 'varchar(100)', 'NULL' => false, 'default' => '');
 	$data['columns'][] = array('name' => 'final_unit', 'type' => 'varchar(100)', 'NULL' => false, 'default' => '');
 	$data['columns'][] = array('name' => 'final_number', 'type' => 'varchar(100)', 'NULL' => false, 'default' => '');
+	$data['columns'][] = array('name' => 'system', 'type' => 'varchar(20)', 'NULL' => false, 'default' => 'bits');  
+	// decimal=1000, bits=1024
 
 	$data['primary'] = 'hash';
 	$data['type'] = 'InnoDB';
 	$data['comment'] = 'sources';
 	api_plugin_db_table_create ('topx', 'plugin_topx_source', $data);
 
-	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','ucd/net - Load Average - 1 Minute','9b82d44eb563027659683765f92c9757','load_1min=load_1min','Load','strip','load','2')");
-	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','Host MIB - CPU Utilization','f6e7d21c19434666bbdac00ccef9932f','cpu=cpu','Utilization','strip','%','0')");
-//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','Host MIB - Hard Drive Space','d814fa3b79bd0f8933b6e0834d3f16d0','hdd_total%hdd_used','Used','strip','%','1')");
-//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','Interface - Errors/Discards','36335cd98633963a575b70639cd2fdad','discards_in+errors_in','Errors+Discard','/','errors/Kerrors/Merrors','1/1000/1000000')");
-	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','Mikrotik - System - Uptime','0d8804fbc44a6ab9db89f8d83d050627','uptime/100','Uptime','/','sec/min/hour/days','1/60/3600/86400')");
-	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','APC load','be63bc4946561a274ace2c982548f255','load=load','Load','strip','%','0')");
-	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','MultiCPU AVG','9561518147a2423734394410bcd241b4','load=load','Utilization','strip','%','0')");
-//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,asc_desc) values ('desc','Interface - traffic','6632e1e0b58a565c135d7ff90440c335','traffic_in+traffic_out','Bits','/','bit/Kbit/Mbit/Gbit/Tbit','1/1024/1048576/1073741824/1099511627776')");
+	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','ucd/net - Load Average - 1 Minute','9b82d44eb563027659683765f92c9757','load_1min=load_1min','Load','strip','load','2','decimal')");
+	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','Host MIB - CPU Utilization','f6e7d21c19434666bbdac00ccef9932f','cpu=cpu','Utilization','strip','%','0','decimal')");
+//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','Host MIB - Hard Drive Space','d814fa3b79bd0f8933b6e0834d3f16d0','hdd_total%hdd_used','Used','strip','%','1','decimal')");
+//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','Interface - Errors/Discards','36335cd98633963a575b70639cd2fdad','discards_in+errors_in','Errors+Discard','/','errors/Kerrors/Merrors','1/1000/1000000','decimal')");
+	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','Mikrotik - System - Uptime','0d8804fbc44a6ab9db89f8d83d050627','uptime/100','Uptime','/','sec/min/hour/days','1/60/3600/86400','decimal')");
+	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','APC load','be63bc4946561a274ace2c982548f255','load=load','Load','strip','%','0','decimal')");
+	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','MultiCPU AVG','9561518147a2423734394410bcd241b4','load=load','Utilization','strip','%','0','decimal')");
+//	db_execute ("INSERT INTO plugin_topx_source (sorting,dt_name,hash,operation,unit,final_operation,final_unit,final_number,system) values ('desc','Interface - traffic','6632e1e0b58a565c135d7ff90440c335','traffic_in+traffic_out','Bits','/','bit/Kbit/Mbit/Gbit/Tbit','1/1024/1048576/1073741824/1099511627776','bits')");
 	// MARK1
 
 

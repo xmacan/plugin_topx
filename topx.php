@@ -42,18 +42,40 @@ if (read_config_option('dsstats_enable') != 'on')	{
     die();
 }
 
-function human_readable ($bytes, $precision = null, $decadic = false)	{
+function human_readable ($bytes, $decimal = false)	{
+//return($bytes);
+	if ($bytes > 1000)	{
+		$BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
 
-    $BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
-    $BYTE_PRECISION = array(0, 0, 1, 2, 2, 3, 3, 4, 4);
-    if ($decadic) {
-        $BYTE_NEXT = 1000;
-    } else {
-        $BYTE_NEXT = 1024;
-    }
+    		$BYTE_PRECISION = array(0, 0, 1, 2, 2, 3, 3, 4, 4);
+    		if ($decimal) {
+        		$BYTE_NEXT = 1000;
+    		} else {
+        		$BYTE_NEXT = 1024;
+    		}
 
-	for ($i = 0; ($bytes / $BYTE_NEXT) >= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
-        return round($bytes, is_null($precision) ? $BYTE_PRECISION[$i] : $precision) . $BYTE_UNITS[$i];
+		for ($i = 0; ($bytes / $BYTE_NEXT) <= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
+        	return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
+	}
+       elseif ($bytes < 1)     {
+                $BYTE_UNITS = array(" ","m", "µ", "n", "p", "f", "a", "Z", "y");
+                $BYTE_PRECISION = array(3,3, 3, 2, 2, 2, 1, 1, 1);
+                if ($decimal) {
+                        $BYTE_NEXT = 1000;
+                } else {
+                        $BYTE_NEXT = 1024;
+                }
+
+                for ($i = 0; ($bytes * $BYTE_NEXT) <= 10 && $i < count($BYTE_UNITS) ; $i++) {
+                echo "<hr>$i - $bytes<br/>";
+                $bytes *= $BYTE_NEXT;
+                }
+
+                return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
+        }
+        else
+               return (round($bytes,2));
+
         
 }
 
@@ -293,7 +315,8 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 	if (strpos($source['operation'],'=') !== false)	{	// only one value
 
 /////
-	$avg = round(db_fetch_cell ('SELECT avg(average)' . $query),2);
+//	$avg = human_readable(db_fetch_cell ('SELECT avg(average)' . $query),$source['system']);
+	$avg = db_fetch_cell ('SELECT avg(average)' . $query);
 		
 	array_push($label,'Average all');
 	array_push($graph,$avg);
@@ -312,13 +335,13 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
                                         WHERE data_template_data.local_data_id=' . $row['local_data_id']);
 
 		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-			'<td>' . human_readable($row['value']) . '</td>' .
-			'<td>' . human_readable($row['peak'])  . '</td>';
+			'<td>' . human_readable($row['value'],$source['system']) . '</td>' .
+			'<td>' . human_readable($row['peak'],$source['system'])  . '</td>';
 
     		array_push ($graph,$row['value']);
     		array_push ($label,$row['name']);
 	}
-echo '<tr><td>Average all DS</td><td colspan="2">' . $avg . '</td></tr>';
+echo '<tr><td>Average all DS</td><td colspan="2">' . human_readable($avg,$source['system']) . '</td></tr>';
 
 	print '</table>';
 
