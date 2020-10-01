@@ -54,10 +54,13 @@ function human_readable ($bytes, $decimal = false)	{
         		$BYTE_NEXT = 1024;
     		}
 
-		for ($i = 0; ($bytes / $BYTE_NEXT) <= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
+		for ($i = 0; ($bytes / $BYTE_NEXT) >= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
         	return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
 	}
-       elseif ($bytes < 1)     {
+	elseif ($bytes == 0) {
+		return (0);
+	}
+       	elseif ($bytes < 1)     {
                 $BYTE_UNITS = array(" ","m", "µ", "n", "p", "f", "a", "Z", "y");
                 $BYTE_PRECISION = array(3,3, 3, 2, 2, 2, 1, 1, 1);
                 if ($decimal) {
@@ -67,7 +70,7 @@ function human_readable ($bytes, $decimal = false)	{
                 }
 
                 for ($i = 0; ($bytes * $BYTE_NEXT) <= 10 && $i < count($BYTE_UNITS) ; $i++) {
-                echo "<hr>$i - $bytes<br/>";
+//                echo "<hr>$i - $bytes<br/>";
                 $bytes *= $BYTE_NEXT;
                 }
 
@@ -75,8 +78,59 @@ function human_readable ($bytes, $decimal = false)	{
         }
         else
                return (round($bytes,2));
+}
 
-        
+/*
+function first_operation ($value, $operation)	{
+	
+	if (strpos($operation, "/") !== false)	{	// format /number	
+	
+		$val = (int) substr($operation,strpos($operation,'/')+1);
+		$value = $value/$val;
+	
+	}
+	if (strpos($operation, "+") !== false)	{	// format x+y	
+
+	}
+	else {	//x=x
+		// maydo do nothing
+	}
+	
+
+
+	return($value);
+}
+*/
+
+
+function final_operation ($value,$final_operation,$final_unit,$final_number) {
+
+	if ( $final_operation == "strip")	{	// only round
+		$value = round($value,$final_number) . " " . $final_unit;
+	}
+	elseif ( $final_operation == "/")	{ // kmgt + time
+		$num = explode ("/",$final_number);
+		$suf = explode ("/",$final_unit);
+
+		$num = array_reverse ($num,TRUE);
+		$suf = array_reverse ($suf, TRUE);
+
+		for ($f = count($num) -1;$f >=0;$f--)	{
+			$xvalue = $value/$num[$f];
+
+			if ($xvalue > 1)	{
+				$value = round($xvalue,2) . " " . $suf[$f];
+				break;
+			}
+		}
+	}
+/*	else	{	// empty final operation
+		// without round
+	}
+*/
+	return ($value);
+
+
 }
 
 $ar_age = array ('hour' => 'Last Hour', 'day' => 'Last Day', 'week' => 'Last Week', 'month' => 'Last Month', 'year' => 'Last year');
@@ -263,6 +317,7 @@ html_end_box();
 
 print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
 
+
 $columns = " t1.local_data_id as local_data_id, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as value, t2.peak as peak ";
 $query = ' FROM data_template_data AS t1 LEFT JOIN ';
 
@@ -297,7 +352,7 @@ $query .= $_SESSION['sort'] . ' ' ;
 if ($_SESSION['topx'] > 0)    
     $query .= 'LIMIT ' . $_SESSION['topx'];
 
-print 'SELECT ' . $columns . ' ' . $query;
+print '<br/><br/>SELECT ' . $columns . ' ' . $query . '<br/><br/>';
 
 
 $graph = array();
@@ -305,66 +360,88 @@ $label = array();
 
 
 
-////////// supported
 if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 
 	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
 		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
 		array($id));
 	
-	if (strpos($source['operation'],'=') !== false)	{	// only one value
+//	if (strpos($source['operation'],'=') !== false)	{	// only one value
 
-/////
-//	$avg = human_readable(db_fetch_cell ('SELECT avg(average)' . $query),$source['system']);
-	$avg = db_fetch_cell ('SELECT avg(average)' . $query);
-		
-	array_push($label,'Average all');
-	array_push($graph,$avg);
+		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+
 		$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
 
-	$result = db_fetch_assoc("SELECT $columns $query");
+		$result = db_fetch_assoc("SELECT $columns $query");
 
-	print '<table  class="topx_table">';
-	print '<tr><th>Data source</th><th>Avg. value [' . $source['final_unit'] . ']</th><th>Peak [' . $source['final_unit'] . ']</th></tr>';
+		print '<table  class="topx_table">';
+		print '<tr><th>Data source</th><th>Avg. value [' . $source['final_unit'] . ']</th><th>Peak [' . $source['final_unit'] . ']</th></tr>';
 
-	foreach ($result as $row)	{
-    		$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
+		$avg_count = 0;
+
+		foreach ($result as $row)	{
+    			$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
                                         LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
                                         LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
                                         WHERE data_template_data.local_data_id=' . $row['local_data_id']);
 
-		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-			'<td>' . human_readable($row['value'],$source['system']) . '</td>' .
-			'<td>' . human_readable($row['peak'],$source['system'])  . '</td>';
+			if (strpos($source['operation'],'/') !== false)	{	// /number
+				$val = (int) substr($source['operation'],strpos($source['operation'],'/')+1);
+				$row['value'] = $row['value']/$val;
+				$row['peak'] = $row['peak']/$val;
 
-    		array_push ($graph,$row['value']);
-    		array_push ($label,$row['name']);
-	}
-echo '<tr><td>Average all DS</td><td colspan="2">' . human_readable($avg,$source['system']) . '</td></tr>';
+				if ($avg_count == 0)	{ // ugly, i know ... i need call this only one
+					$avg = $avg/$val;
+					$avg_count++;
+				}
+			}
+			if (strpos($source['operation'],'+') !== false)	{	// x+y
 
-	print '</table>';
+			}
+			else	{ // x=x
+			
+			}
+
+	//		$row['value'] = first_operation ($row['value'],$source['operation']);
+
+	    		array_push ($graph,$row['value']);
+    			array_push ($label,$row['name']);
 
 
-///////
+
+/*
+			print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
+				'<td>' . human_readable($row['value'],$source['system']) . '</td>' .
+				'<td>' . human_readable($row['peak'],$source['system'])  . '</td>';
+
+function final_operation ($value,$final_operation,$final_unit,$final_number) {
+
+*/
+			print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
+				'<td>' . final_operation($row['value'],$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td>' .
+				'<td>' . final_operation($row['peak'],$source['final_operation'],$source['final_unit'],$source['final_number'])  . '</td>';
+
+
+		}
+
+		array_push($graph,$avg);
+		array_push($label,'Average all');
+
 	
-	}
-	else	{
-		print 'comming soon';
+		echo '<tr><td>Average all DS</td><td colspan="2">' . final_operation($avg,$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td></tr>';
+		print '</table>';
 	
-	}
-
-
 }
 else	{	// unsupported
 
+	print 'Unsupported = plain data without units only with decimal unit conversion';
 
-	$avg = round(db_fetch_cell ('SELECT avg(average)' . $query),2);
+	$avg = db_fetch_cell ('SELECT avg(average)' . $query);
 		
 	array_push($label,'Average all');
 	array_push($graph,$avg);
-	$pie_title = 'TODO :-)'; // !!!! dodelat
-
+	$pie_title = ''; 
 
 	$result = db_fetch_assoc("SELECT $columns $query");
 
@@ -378,13 +455,16 @@ else	{	// unsupported
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
                                         WHERE data_template_data.local_data_id=' . $row['local_data_id']);
 
+    		array_push ($graph,$row['value']);
+    		array_push ($label,$row['name']);
+
+
 		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
 			'<td>' . human_readable($row['value']) . '</td>' .
 			'<td>' . human_readable($row['peak']) . '</td>';
 
-    		array_push ($graph,$row['value']);
-    		array_push ($label,$row['name']);
 	}
+	echo '<tr><td>Average all DS</td><td colspan="2">' . human_readable($avg,'decimal') . '</td></tr>';
 
 	print '</table>';
 
