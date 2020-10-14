@@ -376,7 +376,7 @@ echo "<hr>1:$id<hr>";
 	}
 	if (strpos($source['operation'],'/') !== false)	{	// only one value/number ------------------------
 
-		$columns = " t1.local_data_id as ldidd, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ';
 		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id .
@@ -452,7 +452,7 @@ echo "<hr>1:$id<hr>";
 		if (strpos($source['operation'],'/') !== false)	{	// /number
 			$val = (int) substr($source['operation'],strpos($source['operation'],'/')+1);
 			$row['xvalue'] = $row['xvalue']/$val;
-			$row['peak'] = $row['xpeak']/$val;
+			$row['xpeak'] = $row['xpeak']/$val;
 
 			if ($avg_count == 0)	{ // ugly, i know ... i need call this only one
 				$avg = $avg/$val;
