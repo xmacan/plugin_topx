@@ -318,31 +318,185 @@ html_end_box();
 print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
 
 
-$columns = " t1.local_data_id as local_data_id, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as value, t2.peak as peak ";
-$query = ' FROM data_template_data AS t1 LEFT JOIN ';
+
+//print '<br/><br/>SELECT ' . $columns . ' ' . $query . '<br/><br/>';
+
+
+$graph = array();
+$label = array();
 
 switch ($_SESSION['age'])	{
     case 'hour':
-	$query .= 'data_source_stats_hourly ';
+	$table = 'data_source_stats_hourly ';
     break;
     case 'day':
-	$query .= 'data_source_stats_daily ';
+	$table = 'data_source_stats_daily ';
     break;
     case 'week':
-	$query .= 'data_source_stats_weekly ';
+	$table = 'data_source_stats_weekly ';
     break;
     case 'month':
-	$query .= 'data_source_stats_monthly ';
+	$table = 'data_source_stats_monthly ';
     break;
     case 'year':
-	$query .= 'data_source_stats_yearly ';
+	$table = 'data_source_stats_yearly ';
     break;
 }  
     
 $id = $_SESSION['ds'];
 if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')
 	$id *= -1;     
+
+
+
+if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
+
+	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
+		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
+		array($id));
+
+echo "<hr>1:$id<hr>";
+
+	if (strpos($source['operation'],'=') !== false)	{	// only one value ----------------------------
+
+		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
+		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
+    		WHERE t1.data_template_id = ' . $id .
+   		 ' ORDER BY t2.average ';
     
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0)    
+			$query .= 'LIMIT ' . $_SESSION['topx'];
+
+
+		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+		$result = db_fetch_assoc("SELECT $columns $query");
+	}
+	if (strpos($source['operation'],'/') !== false)	{	// only one value/number ------------------------
+
+		$columns = " t1.local_data_id as ldidd, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ';
+		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id .
+		' ORDER BY t2.average ';
+    
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0)    
+		$query .= 'LIMIT ' . $_SESSION['topx'];
+
+		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+		$result = db_fetch_assoc("SELECT $columns $query");
+	}
+	elseif (strpos($source['operation'],'%') !== false)	{	// hdd_total%hdd_used ----------------------
+
+	// spravny dotaz
+	//  select name_cache as name, t2.local_data_id as ldid, rrd_name, 
+	// 100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue 
+	// from data_template_data as t1 left join  data_source_stats_hourly as t2 
+	// on t1.local_data_id=t2.local_data_id  
+	// where rrd_name='hdd_used' and data_template_id = 43 order by xvalue desc limit 15;
+
+		$columns = " name_cache as name, t2.local_data_id as ldid, rrd_name, 
+		100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue,
+		100*peak/(select peak from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total') as xpeak ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
+		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . 
+		" AND rrd_name='hdd_used' " . 
+		' ORDER BY xvalue ';
+    
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0)    
+			$query .= 'LIMIT ' . $_SESSION['topx'];
+
+		$result = db_fetch_assoc("SELECT $columns $query");
+
+
+		// avg zde musim takto
+		$columns = " t1.local_data_id as ldid,100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
+		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . 
+		" AND rrd_name='hdd_used' ";
+    
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+
+		$avg = 0;
+		foreach ($xavg as $row)	{
+			$avg+=$row['xvalue'];
+		}
+		
+		$avg = $avg/count($xavg);
+	}
+
+
+// spolecna cast - supported
+	$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
+
+	print '<table  class="topx_table">';
+	print '<tr><th>Data source</th><th>Avg. value [' . $source['final_unit'] . ']</th><th>Peak [' . $source['final_unit'] . ']</th></tr>';
+
+	$avg_count = 0;
+
+	foreach ($result as $row)	{
+		$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
+                                        LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
+                                        LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
+                                        LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
+                                        WHERE data_template_data.local_data_id=' . $row['ldid']);
+
+		if (strpos($source['operation'],'/') !== false)	{	// /number
+			$val = (int) substr($source['operation'],strpos($source['operation'],'/')+1);
+			$row['xvalue'] = $row['xvalue']/$val;
+			$row['peak'] = $row['xpeak']/$val;
+
+			if ($avg_count == 0)	{ // ugly, i know ... i need call this only one
+				$avg = $avg/$val;
+				$avg_count++;
+			}
+		}
+		if (strpos($source['operation'],'+') !== false)	{	// x+y
+			// !!!! toto neni hotovo
+			//discards_in+errors_in - ze stareho kodu
+			$act_value = $item['value1'] + $item['value2'];
+			$avg_value = (($cycle_real*$item['result_value'])+$act_value)/($cycle_real+1);
+		}
+//		else	{ // x=x
+//		
+//		}
+
+// !!!! zde nemusim mit treba %?
+
+//		$row['value'] = first_operation ($row['value'],$source['operation']);
+
+    		array_push ($graph,$row['xvalue']);
+		array_push ($label,$row['name']);
+
+
+
+		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
+			'<td>' . final_operation($row['xvalue'],$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td>' .
+			'<td>' . final_operation($row['xpeak'],$source['final_operation'],$source['final_unit'],$source['final_number'])  . '</td>';
+	}
+
+	array_push($graph,$avg);
+	array_push($label,'Average all');
+
+	
+	echo '<tr><td>Average all DS</td><td colspan="2">' . final_operation($avg,$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td></tr>';
+	print '</table>';
+	
+}
+else	{	// unsupported
+
+	print 'Unsupported = plain data without units only with decimal unit conversion';
+
+$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
 $query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
     WHERE t1.data_template_id = ' . $id .
     ' ORDER BY t2.average ';
@@ -352,90 +506,6 @@ $query .= $_SESSION['sort'] . ' ' ;
 if ($_SESSION['topx'] > 0)    
     $query .= 'LIMIT ' . $_SESSION['topx'];
 
-print '<br/><br/>SELECT ' . $columns . ' ' . $query . '<br/><br/>';
-
-
-$graph = array();
-$label = array();
-
-
-
-if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
-
-	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
-		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
-		array($id));
-	
-//	if (strpos($source['operation'],'=') !== false)	{	// only one value
-
-		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
-
-		$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
-
-		$result = db_fetch_assoc("SELECT $columns $query");
-
-		print '<table  class="topx_table">';
-		print '<tr><th>Data source</th><th>Avg. value [' . $source['final_unit'] . ']</th><th>Peak [' . $source['final_unit'] . ']</th></tr>';
-
-		$avg_count = 0;
-
-		foreach ($result as $row)	{
-    			$graph_id = db_fetch_cell ('SELECT DISTINCT(local_graph_id) FROM graph_templates_item
-                                        LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
-                                        LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
-                                        LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
-                                        WHERE data_template_data.local_data_id=' . $row['local_data_id']);
-
-			if (strpos($source['operation'],'/') !== false)	{	// /number
-				$val = (int) substr($source['operation'],strpos($source['operation'],'/')+1);
-				$row['value'] = $row['value']/$val;
-				$row['peak'] = $row['peak']/$val;
-
-				if ($avg_count == 0)	{ // ugly, i know ... i need call this only one
-					$avg = $avg/$val;
-					$avg_count++;
-				}
-			}
-			if (strpos($source['operation'],'+') !== false)	{	// x+y
-
-			}
-			else	{ // x=x
-			
-			}
-
-	//		$row['value'] = first_operation ($row['value'],$source['operation']);
-
-	    		array_push ($graph,$row['value']);
-    			array_push ($label,$row['name']);
-
-
-
-/*
-			print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-				'<td>' . human_readable($row['value'],$source['system']) . '</td>' .
-				'<td>' . human_readable($row['peak'],$source['system'])  . '</td>';
-
-function final_operation ($value,$final_operation,$final_unit,$final_number) {
-
-*/
-			print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-				'<td>' . final_operation($row['value'],$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td>' .
-				'<td>' . final_operation($row['peak'],$source['final_operation'],$source['final_unit'],$source['final_number'])  . '</td>';
-
-
-		}
-
-		array_push($graph,$avg);
-		array_push($label,'Average all');
-
-	
-		echo '<tr><td>Average all DS</td><td colspan="2">' . final_operation($avg,$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td></tr>';
-		print '</table>';
-	
-}
-else	{	// unsupported
-
-	print 'Unsupported = plain data without units only with decimal unit conversion';
 
 	$avg = db_fetch_cell ('SELECT avg(average)' . $query);
 		
@@ -453,15 +523,15 @@ else	{	// unsupported
                                         LEFT JOIN data_template_rrd ON (graph_templates_item.task_item_id=data_template_rrd.id)
                                         LEFT JOIN data_local ON (data_template_rrd.local_data_id=data_local.id)
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
-                                        WHERE data_template_data.local_data_id=' . $row['local_data_id']);
+                                        WHERE data_template_data.local_data_id=' . $row['ldid']);
 
-    		array_push ($graph,$row['value']);
+    		array_push ($graph,$row['xvalue']);
     		array_push ($label,$row['name']);
 
 
 		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
-			'<td>' . human_readable($row['value']) . '</td>' .
-			'<td>' . human_readable($row['peak']) . '</td>';
+			'<td>' . human_readable($row['xvalue']) . '</td>' .
+			'<td>' . human_readable($row['xpeak']) . '</td>';
 
 	}
 	echo '<tr><td>Average all DS</td><td colspan="2">' . human_readable($avg,'decimal') . '</td></tr>';
