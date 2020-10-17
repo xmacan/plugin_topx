@@ -37,13 +37,13 @@ print '<link type="text/css" href="' . $config['url_path'] . 'plugins/topx/theme
 print '<link type="text/css" href="' . $config['url_path'] . 'plugins/topx/themes/' . $selectedTheme . '.css" rel="stylesheet">';
 
 if (read_config_option('dsstats_enable') != 'on')	{
-    print 'Please enable and configure <a href="' . $config['url_path'] .'settings.php?tab=data">DS stats</a>'; 
-    bottom_footer();
-    die();
+	print 'Please enable and configure <a href="' . $config['url_path'] .'settings.php?tab=data">DS stats</a>'; 
+	bottom_footer();
+	die();
 }
 
-function human_readable ($bytes, $decimal = false)	{
-//return($bytes);
+function human_readable ($bytes, $decimal = false)	{ // for unsupported ds
+
 	if ($bytes > 1000)	{
 		$BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
 
@@ -70,8 +70,7 @@ function human_readable ($bytes, $decimal = false)	{
                 }
 
                 for ($i = 0; ($bytes * $BYTE_NEXT) <= 10 && $i < count($BYTE_UNITS) ; $i++) {
-//                echo "<hr>$i - $bytes<br/>";
-                $bytes *= $BYTE_NEXT;
+                	$bytes *= $BYTE_NEXT;
                 }
 
                 return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
@@ -79,29 +78,6 @@ function human_readable ($bytes, $decimal = false)	{
         else
                return (round($bytes,2));
 }
-
-/*
-function first_operation ($value, $operation)	{
-	
-	if (strpos($operation, "/") !== false)	{	// format /number	
-	
-		$val = (int) substr($operation,strpos($operation,'/')+1);
-		$value = $value/$val;
-	
-	}
-	if (strpos($operation, "+") !== false)	{	// format x+y	
-
-	}
-	else {	//x=x
-		// maydo do nothing
-	}
-	
-
-
-	return($value);
-}
-*/
-
 
 function final_operation ($value,$final_operation,$final_unit,$final_number) {
 
@@ -151,20 +127,23 @@ $xar_ds = db_fetch_assoc ('SELECT distinct(t1.name) as dsname,t1.id as dsid, cou
 			    GROUP BY data_template_id'); 
 */
 
-// nejprve podporovane
-$ds_sup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("supported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
- FROM data_template AS t1
- JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
- JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
- GROUP BY data_template_id ORDER BY dsname');
+// supported first
+//$ds_sup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("supported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
+$ds_sup = db_fetch_assoc ('SELECT distinct(t3.dt_name) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
+	FROM data_template AS t1
+	JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
+	JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
+	GROUP BY data_template_id ORDER BY dsname');
 
-
+echo 'SELECT distinct(t3.desc) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
+	FROM data_template AS t1
+	JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
+	JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
+	GROUP BY data_template_id ORDER BY dsname';
 $ds_unsup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("unsupported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "false" AS sup 
- FROM data_template AS t1
- JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
- GROUP BY data_template_id ORDER BY dsname'
-	);
-	
+	FROM data_template AS t1
+	JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
+	GROUP BY data_template_id ORDER BY dsname');
 	
 $ds_all = array_merge ($ds_sup,$ds_unsup);
 
@@ -176,40 +155,34 @@ foreach ($ds_all as $ds)	{
 	   $tmp = $ds['dsid'];
 
 	}
-    $ar_ds[$tmp]['key']   = $tmp;
-    $ar_ds[$tmp]['name']  = $ds['dsname'];
-    $ar_ds[$tmp]['count'] = $ds['dscount'];
-    $ar_ds[$tmp]['supported'] = $ds['sup'];
+
+	$ar_ds[$tmp]['key']   = $tmp;
+    	$ar_ds[$tmp]['name']  = $ds['dsname'];
+    	$ar_ds[$tmp]['count'] = $ds['dscount'];
+    	$ar_ds[$tmp]['supported'] = $ds['sup'];
 }
-
-
-//var_dump($ar_ds);
-
-
 
 
 if ( isset_request_var ('ds') && array_key_exists (get_request_var ('ds'), $ar_ds))	
-    $_SESSION['ds'] = get_filter_request_var('ds');
+	$_SESSION['ds'] = get_filter_request_var('ds');
 if (!isset($_SESSION['ds']))	{
-    $_SESSION['ds'] = key($ar_ds);
+	$_SESSION['ds'] = key($ar_ds);
 }
 
 if ( isset_request_var ('age') && array_key_exists (get_request_var ('age'), $ar_age))
-    $_SESSION['age'] = get_request_var ('age');
+	$_SESSION['age'] = get_request_var ('age');
 if (!isset($_SESSION['age']))
-    $_SESSION['age'] = 'hour';
+	$_SESSION['age'] = 'hour';
 
 if ( isset_request_var ('topx') && array_key_exists (get_request_var ('topx'), $ar_topx))
-    $_SESSION['topx'] = get_filter_request_var('topx');
+	$_SESSION['topx'] = get_filter_request_var('topx');
 if (!isset($_SESSION['topx']))
-    $_SESSION['topx'] = 5;
+	$_SESSION['topx'] = 5;
 
 if ( isset_request_var ('sort') && array_key_exists (get_request_var ('sort'), $ar_sort))
-    $_SESSION['sort'] = get_request_var ('sort');
+	$_SESSION['sort'] = get_request_var ('sort');
 if (!isset($_SESSION['sort']))
 	$_SESSION['sort'] = 'desc';
-
-
 ?>
 
 <script type="text/javascript">
@@ -243,10 +216,10 @@ html_start_box('<strong>TopX</strong>', '100%', '', '3', 'center', '');
 <?php
 
 foreach ($ar_ds as $ds)	{
-    if ($_SESSION['ds'] == $ds['key'])
-	print '<option value="' . $ds['key'] . '" selected="selected">' . $ds['name'] . ' (' . $ds['count'] . ')</option>';
-    else    
-	print '<option value="' . $ds['key'] . '">' . $ds['name'] . ' (' . $ds['count'] . ')</option>';
+	if ($_SESSION['ds'] == $ds['key'])
+		print '<option value="' . $ds['key'] . '" selected="selected">' . $ds['name'] . ' (' . $ds['count'] . ')</option>';
+	else    
+		print '<option value="' . $ds['key'] . '">' . $ds['name'] . ' (' . $ds['count'] . ')</option>';
 }
 ?>
 
@@ -315,12 +288,7 @@ foreach ($ar_sort as $key=>$value)	{
 
 html_end_box();
 
-print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
-
-
-
-//print '<br/><br/>SELECT ' . $columns . ' ' . $query . '<br/><br/>';
-
+// print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
 
 $graph = array();
 $label = array();
@@ -348,18 +316,15 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')
 	$id *= -1;     
 
 
-
 if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 
 	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
 		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
 		array($id));
 
-echo "<hr>1:$id<hr>";
-
 	if (strpos($source['operation'],'=') !== false)	{	// only one value ----------------------------
 
-		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak  ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
 		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
     		WHERE t1.data_template_id = ' . $id .
@@ -376,7 +341,7 @@ echo "<hr>1:$id<hr>";
 	}
 	if (strpos($source['operation'],'/') !== false)	{	// only one value/number ------------------------
 
-		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
+		$columns = " t1.local_data_id AS ldid, concat(t1.name_cache,' - ', t2.rrd_name) AS name, t2.average AS xvalue, t2.peak AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ';
 		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id .
@@ -392,21 +357,13 @@ echo "<hr>1:$id<hr>";
 	}
 	elseif (strpos($source['operation'],'%') !== false)	{	// hdd_total%hdd_used ----------------------
 
-	// spravny dotaz
-	//  select name_cache as name, t2.local_data_id as ldid, rrd_name, 
-	// 100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue 
-	// from data_template_data as t1 left join  data_source_stats_hourly as t2 
-	// on t1.local_data_id=t2.local_data_id  
-	// where rrd_name='hdd_used' and data_template_id = 43 order by xvalue desc limit 15;
-
-		$columns = " name_cache as name, t2.local_data_id as ldid, rrd_name, 
-		100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue,
-		100*peak/(select peak from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total') as xpeak ";
-		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
-		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . 
-		" AND rrd_name='hdd_used' " . 
-		' ORDER BY xvalue ';
+		$columns = " name_cache AS name, t2.local_data_id AS ldid,  
+		100*average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='hdd_total' ) AS xvalue,
+		100*peak/(SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='hdd_total') AS xpeak ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'hdd_used\'   
+		ORDER BY xvalue ';
     
 		$query .= $_SESSION['sort'] . ' ' ;
 
@@ -415,13 +372,42 @@ echo "<hr>1:$id<hr>";
 
 		$result = db_fetch_assoc("SELECT $columns $query");
 
+		// avg zde musim takto
+		$columns = " t1.local_data_id as ldid,100*average/(select average from $table where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'hdd_used\' ';
+    
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+		$avg = 0;
+		foreach ($xavg as $row)	{
+			$avg+=$row['xvalue'];
+		}
+		
+		$avg = $avg/count($xavg);
+	}
+	elseif ($source['operation'] == 'discards_in+errors_in')	{		// discards_in+errors_in
+		
+		$columns = " name_cache AS name, t2.local_data_id AS ldid, 
+		average + (SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_in' ) AS xvalue,
+		peak + (SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='discards_in') AS xpeak ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'errors_in\'   
+		ORDER BY xvalue ';
+    
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0)    
+			$query .= 'LIMIT ' . $_SESSION['topx'];
+
+		$result = db_fetch_assoc("SELECT $columns $query");
 
 		// avg zde musim takto
-		$columns = " t1.local_data_id as ldid,100*average/(select average from data_source_stats_hourly where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue ";
-		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
-		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . 
-		" AND rrd_name='hdd_used' ";
+		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_in' ) as xvalue ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'errors_in\' ';
     
 		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
 
@@ -432,9 +418,42 @@ echo "<hr>1:$id<hr>";
 		
 		$avg = $avg/count($xavg);
 	}
+	elseif ($source['operation'] == 'discards_out+errors_out')	{		// discards_out+errors_out
+		
+		$columns = " name_cache AS name, t2.local_data_id AS ldid, 
+		average + (SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_out' ) AS xvalue,
+		peak + (SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='discards_out') AS xpeak ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'errors_out\'   
+		ORDER BY xvalue ';
+    
+		$query .= $_SESSION['sort'] . ' ' ;
 
+		if ($_SESSION['topx'] > 0)    
+			$query .= 'LIMIT ' . $_SESSION['topx'];
 
-// spolecna cast - supported
+		$result = db_fetch_assoc("SELECT $columns $query");
+
+		// avg zde musim takto
+		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_out' ) as xvalue ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'errors_out\' ';
+    
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+
+		$avg = 0;
+		foreach ($xavg as $row)	{
+			$avg+=$row['xvalue'];
+		}
+		
+		$avg = $avg/count($xavg);
+	}
+	
+	
+
+// common part - supported
 	$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
 
 	print '<table  class="topx_table">';
@@ -449,7 +468,8 @@ echo "<hr>1:$id<hr>";
                                         LEFT JOIN data_template_data ON (data_local.id=data_template_data.local_data_id)
                                         WHERE data_template_data.local_data_id=' . $row['ldid']);
 
-		if (strpos($source['operation'],'/') !== false)	{	// /number
+		// sometimes I need operation with all numbers
+		if (strpos($source['operation'],'/') !== false)	{	// x/number
 			$val = (int) substr($source['operation'],strpos($source['operation'],'/')+1);
 			$row['xvalue'] = $row['xvalue']/$val;
 			$row['xpeak'] = $row['xpeak']/$val;
@@ -460,23 +480,12 @@ echo "<hr>1:$id<hr>";
 			}
 		}
 		if (strpos($source['operation'],'+') !== false)	{	// x+y
-			// !!!! toto neni hotovo
-			//discards_in+errors_in - ze stareho kodu
-			$act_value = $item['value1'] + $item['value2'];
-			$avg_value = (($cycle_real*$item['result_value'])+$act_value)/($cycle_real+1);
 		}
-//		else	{ // x=x
-//		
-//		}
-
-// !!!! zde nemusim mit treba %?
-
-//		$row['value'] = first_operation ($row['value'],$source['operation']);
+		else	{ // x=x
+		}
 
     		array_push ($graph,$row['xvalue']);
 		array_push ($label,$row['name']);
-
-
 
 		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
 			'<td>' . final_operation($row['xvalue'],$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td>' .
@@ -485,7 +494,6 @@ echo "<hr>1:$id<hr>";
 
 	array_push($graph,$avg);
 	array_push($label,'Average all');
-
 	
 	echo '<tr><td>Average all DS</td><td colspan="2">' . final_operation($avg,$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td></tr>';
 	print '</table>';
@@ -495,11 +503,10 @@ else	{	// unsupported
 
 	print 'Unsupported = plain data without units only with decimal unit conversion';
 
-$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak, t2.rrd_name as rrd_name ";
-$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
-$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-    WHERE t1.data_template_id = ' . $id .
-    ' ORDER BY t2.average ';
+	$columns = " t1.local_data_id AS ldid, concat(t1.name_cache,' - ', t2.rrd_name) AS name, t2.average AS xvalue, t2.peak AS xpeak ";
+	$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+    		ORDER BY t2.average ';
     
 $query .= $_SESSION['sort'] . ' ' ;
 
@@ -535,76 +542,63 @@ if ($_SESSION['topx'] > 0)
 
 	}
 	echo '<tr><td>Average all DS</td><td colspan="2">' . human_readable($avg,'decimal') . '</td></tr>';
-
 	print '</table>';
 
 }
 
+// graph
 $xid = 'x' . uniqid();
-
 print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="700" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
 print "<script type='text/javascript' src='js/chartjs-plugin-annotation.min.js'></script>";
-
 print "<script type='text/javascript'>";
 
 $pie_labels = implode('","',$label);
 $pie_values = implode(',',$graph);
-//$pie_title = 'todo :-)';
-
 
 print <<<EOF
 var $xid = document.getElementById("pie_$xid").getContext("2d");
 new Chart($xid, {
-    type: 'horizontalBar',
-    data: {
-        labels: ["$pie_labels"],
-        datasets: [{
-            backgroundColor: [ "#555555"],
-            data: [$pie_values]
-        }],
-    },
-    options: {
-        responsive: false,
-        legend: {
-            display: false
-         },
-scales: {
-		    xAxes: [{
-			display: true,
-			scaleLabel: {
-			    display: true,
-			    labelString: "$pie_title"
-			}
-		    }], 
-		    },        
-         
-         
-        tooltipTemplate: "<%= label %>",
-      annotation: {
-        annotations: [
-          {
-            type: "line",
-            mode: "vertical",
-            scaleID: "x-axis-0",
-            value: $avg,
-            borderColor: "red",
-          }
-        ]
-      },
-
-        
-    },
+	type: 'horizontalBar',
+	data: {
+        	labels: ["$pie_labels"],
+        	datasets: [{
+            		backgroundColor: [ "#555555"],
+            		data: [$pie_values]
+        	}],
+    	},
+    	options: {
+        	responsive: false,
+        	legend: {
+            		display: false
+         	},
+	 	scales: {
+			xAxes: [{
+				display: true,
+				scaleLabel: {
+			    		display: true,
+			    		labelString: "$pie_title"
+				}
+			}], 
+		},        
+        	tooltipTemplate: "<%= label %>",
+      		annotation: {
+        		annotations: [{
+            			type: "line",
+            			mode: "vertical",
+            			scaleID: "x-axis-0",
+            			value: $avg,
+            			borderColor: "red",
+          		}]
+      		},
+	},
 });
 EOF;
 
 print "</script></div>";
 // end of graph	     
 
-
-
 print '<br/><br/>';
 print 'DS stats last major run time: ' .  read_config_option('dsstats_last_major_run_time') . '<br/>';    
 print 'DS stats last daily run time: ' .  read_config_option('dsstats_last_daily_run_time') . '<br/>';    
-
 
 bottom_footer();
