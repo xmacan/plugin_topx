@@ -26,6 +26,11 @@ If you find a problem, let me know via github or https://forums.cacti.net/viewto
    
 
 ## Changelog
+	--- 0.6
+		Add arithmetical operation again
+		Bug fix
+		Graph display optimalization
+		
 	--- 0.5
 		Add theme support
 		Remove my data source poller code, using native dsstats

@@ -100,6 +100,7 @@ function final_operation ($value,$final_operation,$final_unit,$final_number) {
 			}
 		}
 	}
+// MARK2
 /*	else	{	// empty final operation
 		// without round
 	}
@@ -135,11 +136,6 @@ $ds_sup = db_fetch_assoc ('SELECT distinct(t3.dt_name) AS dsname, t1.id AS dsid,
 	JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
 	GROUP BY data_template_id ORDER BY dsname');
 
-echo 'SELECT distinct(t3.desc) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
-	FROM data_template AS t1
-	JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
-	JOIN plugin_topx_source AS t3 on t1.hash = t3.hash
-	GROUP BY data_template_id ORDER BY dsname';
 $ds_unsup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("unsupported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "false" AS sup 
 	FROM data_template AS t1
 	JOIN data_template_data AS t2 ON t1.id=t2.data_template_id
@@ -322,6 +318,7 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
 		array($id));
 
+// MARK3
 	if (strpos($source['operation'],'=') !== false)	{	// only one value ----------------------------
 
 		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak  ";
@@ -514,7 +511,7 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 		}
 		else	{ // x=x
 		}
-
+// MARK4
     		array_push ($graph,$row['xvalue']);
 		array_push ($label,$row['name']);
 
