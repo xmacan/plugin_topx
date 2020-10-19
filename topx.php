@@ -450,7 +450,38 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 		
 		$avg = $avg/count($xavg);
 	}
-	
+	elseif ($source['operation'] == 'traffic_in+traffic_out')	{		// traffic_in+traffic_out - it is in bytes!
+		
+		$columns = " name_cache AS name, t2.local_data_id AS ldid, 
+		8*average + 8*(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='traffic_in' ) AS xvalue,
+		8*peak + 8*(SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='traffic_in') AS xpeak ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'traffic_out\'   
+		ORDER BY xvalue ';
+    
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0)    
+			$query .= 'LIMIT ' . $_SESSION['topx'];
+
+		$result = db_fetch_assoc("SELECT $columns $query");
+//echo "SELECT $columns $query";
+		// avg zde musim takto
+		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='traffic_in' ) as xvalue ";
+		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
+		WHERE t1.data_template_id = ' . $id . ' 
+		AND rrd_name=\'traffic_out\' ';
+    
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+
+		$avg = 0;
+		foreach ($xavg as $row)	{
+			$avg+=$row['xvalue'];
+		}
+		
+		$avg = 8*($avg/count($xavg));
+	}
 	
 
 // common part - supported
@@ -548,7 +579,7 @@ if ($_SESSION['topx'] > 0)
 
 // graph
 $xid = 'x' . uniqid();
-print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="700" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
+print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="800" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
 print "<script type='text/javascript' src='js/chartjs-plugin-annotation.min.js'></script>";
 print "<script type='text/javascript'>";
 
