@@ -42,56 +42,42 @@ if (read_config_option('dsstats_enable') != 'on')	{
 	die();
 }
 
-function human_readable ($bytes, $decimal = false)      { // for unsupported ds
-        $minus = false;
-        if ($bytes < 0) {
-                $bytes *= -1;
-                $minus = true;
+function human_readable ($bytes, $decimal = false) {  // for unsupported ds
+
+        if ($decimal) {
+                $factor = 1000;
+        } else {
+                $factor = 1024;
         }
 
-        if ($bytes > 1000)      {
-                $BYTE_UNITS = array(" ", "K", "M", "G", "T", "P", "E", "Z", "Y");
+        if ($bytes === 0) {
+                return 0;
+        } elseif ($bytes  < 1) {
+                $sizes = array(-1 => 'm', -2 => 'µ',- 3 => 'n', -4 => 'p');
+        } else {
+                $sizes = array(0 => '', 1 => 'K', 2 => 'M', 3 => 'G', 4 => 'T', 5=> 'P');
+        }
 
-                $BYTE_PRECISION = array(0, 0, 1, 2, 2, 3, 3, 4, 4);
-                if ($decimal) {
-                        $BYTE_NEXT = 1000;
+        $i = (int) floor(log(abs($bytes)) / log($factor));
+        $d = pow($factor, $i);
+
+        if (!array_key_exists ($i, $sizes)) {
+                if (function_exists('cacti_log')) {
+                        cacti_log('INTROPAGE WARNING: Bytes = [' . $bytes  .'], Factor = [' . $factor . '], i = [' . $i . '] d = [' . $d . ']');
+                        cacti_debug_backtrace('intropage-hr');
                 } else {
-                        $BYTE_NEXT = 1024;
+                        print 'INTROPAGE WARNING: Bytes = [' . $bytes  .'], Factor = [' . $factor . '], i = [' . $i . '] d = [' . $d . ']';
                 }
-
-                for ($i = 0; ($bytes / $BYTE_NEXT) >= 0.9 && $i < count($BYTE_UNITS); $i++) $bytes /= $BYTE_NEXT;
-                if ($minus)
-                        $bytes *= -1;
-                return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
+                $size = '<unknown>';
+                $i = 1;
+        } else {
+                $size = $sizes[$i];
         }
-        elseif ($bytes == 0) {
-                return (0);
-        }
-        elseif ($bytes < 1)     {
-                $BYTE_UNITS = array(" ","m", "µ", "n", "p", "f", "a", "Z", "y");
-                $BYTE_PRECISION = array(2, 2, 2, 4, 4, 4, 5, 5, 5);
-                if ($decimal) {
-                        $BYTE_NEXT = 1000;
-                } else {
-                        $BYTE_NEXT = 1024;
-                }
-                for ($i = 0; ($bytes * $BYTE_NEXT) <= 1  && $i < count($BYTE_UNITS) ; $i++) {
-                        $bytes *= $BYTE_NEXT;
-                }
 
-                if ($minus)
-                        $bytes *= -1;
-
-                return round($bytes, $BYTE_PRECISION[$i]) . $BYTE_UNITS[$i];
-        }
-        else    {
-                if ($minus)
-                        $bytes *= -1;
-
-               return (round($bytes,2));
-
-        }
+        return round(empty($d)?0:($bytes / pow($factor, $i)), 2).' '.$size;
 }
+
+
 
 function final_operation ($value,$final_operation,$final_unit,$final_number) {
 
@@ -332,6 +318,9 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
 		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
 		array($id));
 
+echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
+                ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ' . $id;
+ 
 // MARK3
 	if (strpos($source['operation'],'=') !== false)	{	// only one value ----------------------------
 
