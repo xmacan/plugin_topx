@@ -50,7 +50,7 @@ function human_readable ($bytes, $decimal = false) {  // for unsupported ds
                 $factor = 1024;
         }
 
-        if ($bytes === 0) {
+        if ($bytes === 0 || is_null($bytes)) {
                 return 0;
         } elseif ($bytes  < 1) {
                 $sizes = array(-1 => 'm', -2 => 'µ',- 3 => 'n', -4 => 'p');
@@ -159,24 +159,23 @@ foreach ($ds_all as $ds)	{
 }
 
 
-if ( isset_request_var ('ds') && array_key_exists (get_request_var ('ds'), $ar_ds))	
+if ( isset_request_var ('ds') && array_key_exists (get_nfilter_request_var ('ds'), $ar_ds))	
 	$_SESSION['ds'] = get_filter_request_var('ds');
 if (!isset($_SESSION['ds']))	{
 	$_SESSION['ds'] = key($ar_ds);
 }
-
-if ( isset_request_var ('age') && array_key_exists (get_request_var ('age'), $ar_age))
-	$_SESSION['age'] = get_request_var ('age');
+if ( isset_request_var ('age') && array_key_exists (get_nfilter_request_var ('age'), $ar_age))
+	$_SESSION['age'] = get_nfilter_request_var ('age');
 if (!isset($_SESSION['age']))
 	$_SESSION['age'] = 'hour';
 
-if ( isset_request_var ('topx') && array_key_exists (get_request_var ('topx'), $ar_topx))
+if ( isset_request_var ('topx') && array_key_exists (get_nfilter_request_var ('topx'), $ar_topx))
 	$_SESSION['topx'] = get_filter_request_var('topx');
 if (!isset($_SESSION['topx']))
 	$_SESSION['topx'] = 5;
 
-if ( isset_request_var ('sort') && array_key_exists (get_request_var ('sort'), $ar_sort))
-	$_SESSION['sort'] = get_request_var ('sort');
+if ( isset_request_var ('sort') && array_key_exists (get_nfilter_request_var ('sort'), $ar_sort))
+	$_SESSION['sort'] = get_nfilter_request_var ('sort');
 if (!isset($_SESSION['sort']))
 	$_SESSION['sort'] = 'desc';
 ?>
