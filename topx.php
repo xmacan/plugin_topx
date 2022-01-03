@@ -1,7 +1,7 @@
 <?php
 /*
  +-------------------------------------------------------------------------+
- | Copyright (C) 2015-2019 Petr Macek                                      |
+ | Copyright (C) 2015-2022 Petr Macek                                      |
  |                                                                         |
  | This program is free software; you can redistribute it and/or           |
  | modify it under the terms of the GNU General Public License             |
@@ -81,27 +81,27 @@ function human_readable ($bytes, $decimal = false) {  // for unsupported ds
 
 function final_operation ($value,$final_operation,$final_unit,$final_number) {
 
-	if ( $final_operation == "strip")	{	// only round
+	if ( $final_operation == "strip") {	// only round
 		$value = round($value,$final_number) . " " . $final_unit;
 	}
-	elseif ( $final_operation == "/")	{ // kmgt + time
+	elseif ( $final_operation == "/") { // kmgt + time
 		$num = explode ("/",$final_number);
 		$suf = explode ("/",$final_unit);
 
 		$num = array_reverse ($num,TRUE);
 		$suf = array_reverse ($suf, TRUE);
 
-		for ($f = count($num) -1;$f >=0;$f--)	{
+		for ($f = count($num) -1; $f >=0; $f--) {
 			$xvalue = $value/$num[$f];
 
-			if ($xvalue > 1)	{
+			if ($xvalue > 1) {
 				$value = round($xvalue,2) . " " . $suf[$f];
 				break;
 			}
 		}
 	}
 // MARK2
-/*	else	{	// empty final operation
+/*	else {	// empty final operation
 		// without round
 	}
 */
@@ -113,20 +113,16 @@ function final_operation ($value,$final_operation,$final_unit,$final_number) {
 $ar_age = array ('hour' => 'Last Hour', 'day' => 'Last Day', 'week' => 'Last Week', 'month' => 'Last Month', 'year' => 'Last year');
 $ar_topx = array ('5' => 'Top 5', '10' => 'Top 10', '20' => 'Top 20', '50' => 'Top 50', '0' => 'All');
 $ar_sort = array ('asc' => 'Normal', 'desc' => 'Reverse');
+$ar_what = array ('average' => 'Average', 'peak' => 'Peak');
+
 
 /* if the user pushed the 'clear' button */
 if (get_request_var('clear_x')) {
     unset($_SESSION['age']);
     unset($_SESSION['topx']);
     unset($_SESSION['sort']);
+    unset($_SESSION['what']);
 }
-
-
-/*
-$xar_ds = db_fetch_assoc ('SELECT distinct(t1.name) as dsname,t1.id as dsid, count(t1.id) as dscount FROM data_template AS t1 
-			    LEFT JOIN data_template_data AS t2 ON t1.id=t2.data_template_id 
-			    GROUP BY data_template_id'); 
-*/
 
 // supported first
 //$ds_sup = db_fetch_assoc ('SELECT DISTINCT(CONCAT("supported - ",t1.name)) AS dsname, t1.id AS dsid, count(t1.id) AS dscount, "true" AS sup 
@@ -146,16 +142,14 @@ $ds_all = array_merge ($ds_sup,$ds_unsup);
 foreach ($ds_all as $ds)	{
 	if ($ds['sup'] == 'true') {
 		$tmp = -1 * $ds['dsid'];
-
 	} else {
 	   $tmp = $ds['dsid'];
-
 	}
 
 	$ar_ds[$tmp]['key']   = $tmp;
-    	$ar_ds[$tmp]['name']  = $ds['dsname'];
-    	$ar_ds[$tmp]['count'] = $ds['dscount'];
-    	$ar_ds[$tmp]['supported'] = $ds['sup'];
+	$ar_ds[$tmp]['name']  = $ds['dsname'];
+	$ar_ds[$tmp]['count'] = $ds['dscount'];
+	$ar_ds[$tmp]['supported'] = $ds['sup'];
 }
 
 
@@ -178,6 +172,12 @@ if ( isset_request_var ('sort') && array_key_exists (get_nfilter_request_var ('s
 	$_SESSION['sort'] = get_nfilter_request_var ('sort');
 if (!isset($_SESSION['sort']))
 	$_SESSION['sort'] = 'desc';
+
+if ( isset_request_var ('what') && array_key_exists (get_nfilter_request_var ('what'), $ar_what))
+	$_SESSION['what'] = get_nfilter_request_var ('what');
+if (!isset($_SESSION['what']))
+	$_SESSION['what'] = key($ar_what);
+
 ?>
 
 <script type="text/javascript">
@@ -187,6 +187,7 @@ function applyViewAgeFilterChange(objForm) {
 	strURL = strURL + '&age=' + objForm.age.value;
 	strURL = strURL + '&topx=' + objForm.topx.value;
 	strURL = strURL + '&sort=' + objForm.sort.value;
+	strURL = strURL + '&what=' + objForm.what.value;
 	document.location = strURL;
 }
 -->
@@ -268,6 +269,22 @@ foreach ($ar_sort as $key=>$value)	{
 }
 ?>
       </select>
+
+     </td>
+     <td nowrap style='white-space: nowrap;' width='20'>
+      &nbsp;What:&nbsp;
+     </td>
+     <td width='1'>
+      <select name='what' onChange='applyViewAgeFilterChange(document.form_topx)'>
+<?php
+foreach ($ar_what as $key=>$value)	{
+    if ($_SESSION['what'] == $key)
+	print '<option value="' . $key . '" selected="selected">' . $value . '</option>';
+    else
+	print '<option value="' . $key . '">' . $value . '</option>';
+}
+?>
+     </select>
      </td>
      <td nowrap>
       &nbsp;<input type='submit' value='Go' title='Set/Refresh Filters'>
@@ -282,8 +299,6 @@ foreach ($ar_sort as $key=>$value)	{
 <?php
 
 html_end_box();
-
-// print '<h3 class="topx_h3">' . db_fetch_cell ('SELECT name FROM data_template WHERE id=' . $_SESSION['ds']) . '</h3>';
 
 $graph = array();
 $label = array();
@@ -304,21 +319,18 @@ switch ($_SESSION['age'])	{
     case 'year':
 	$table = 'data_source_stats_yearly ';
     break;
-}  
-    
+}
+
 $id = $_SESSION['ds'];
-if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')
-	$id *= -1;     
+if ($ar_ds[$_SESSION['ds']]['supported'] == 'true') {
+	$id *= -1;
+}
 
-
-if ($ar_ds[$_SESSION['ds']]['supported'] == 'true')	{
+if ($ar_ds[$_SESSION['ds']]['supported'] == 'true') {
 
 	$source = db_fetch_row_prepared('SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template 
 		ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ?',
 		array($id));
-
-echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
-                ON plugin_topx_source.hash = data_template.hash  WHERE data_template.id = ' . $id;
  
 // MARK3
 	if (strpos($source['operation'],'=') !== false)	{	// only one value ----------------------------
@@ -326,16 +338,16 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		$columns = " t1.local_data_id as ldid, concat(t1.name_cache,' - ', t2.rrd_name) as name, t2.average as xvalue, t2.peak as xpeak  ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ' ;
 		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-    		WHERE t1.data_template_id = ' . $id .
-   		 ' ORDER BY t2.average ';
-    
+		WHERE t1.data_template_id = ' . $id . ' ';
+
+		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+
+		$query .= 'ORDER BY t2.' . $_SESSION['what'] . ' ';
 		$query .= $_SESSION['sort'] . ' ' ;
 
 		if ($_SESSION['topx'] > 0)    
 			$query .= 'LIMIT ' . $_SESSION['topx'];
 
-
-		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
 		$result = db_fetch_assoc("SELECT $columns $query");
 	}
 	if (strpos($source['operation'],'/') !== false)	{	// only one value/number ------------------------
@@ -343,15 +355,18 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		$columns = " t1.local_data_id AS ldid, concat(t1.name_cache,' - ', t2.rrd_name) AS name, t2.average AS xvalue, t2.peak AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' ';
 		$query .= ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id .
-		' ORDER BY t2.average ';
-    
-		$query .= $_SESSION['sort'] . ' ' ;
-
-		if ($_SESSION['topx'] > 0)    
-		$query .= 'LIMIT ' . $_SESSION['topx'];
+		WHERE t1.data_template_id = ' . $id . ' ';
 
 		$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+
+		$query .= 'ORDER BY t2.' . $_SESSION['what'] . ' ';
+
+		$query .= $_SESSION['sort'] . ' ' ;
+
+		if ($_SESSION['topx'] > 0) {
+			$query .= 'LIMIT ' . $_SESSION['topx'];
+		}
+		
 		$result = db_fetch_assoc("SELECT $columns $query");
 	}
 	elseif (strpos($source['operation'],'%') !== false)	{	// hdd_total%hdd_used ----------------------
@@ -361,8 +376,13 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		100*peak/(SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='hdd_total') AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'hdd_used\'   
-		ORDER BY xvalue ';
+		AND rrd_name=\'hdd_used\' ';
+
+		if ($_SESSION['what'] == 'average') {
+			$query .= 'ORDER BY xvalue ';
+		} else {
+			$query .= 'ORDER BY xpeak ';
+		}
     
 		$query .= $_SESSION['sort'] . ' ' ;
 
@@ -372,18 +392,21 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		$result = db_fetch_assoc("SELECT $columns $query");
 
 		// avg zde musim takto
-		$columns = " t1.local_data_id as ldid,100*average/(select average from $table where local_data_id = ldid and rrd_name='hdd_total' ) as xvalue ";
+		$columns = " t1.local_data_id as ldid,100*average/(select average from $table where local_data_id = ldid and rrd_name='hdd_total') as xvalue ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'hdd_used\' ';
+		WHERE t1.data_template_id = ' . $id . ' AND rrd_name=\'hdd_used\'';
     
-		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . $query);
 		$avg = 0;
 		foreach ($xavg as $row)	{
 			$avg+=$row['xvalue'];
 		}
 		
-		$avg = $avg/count($xavg);
+		if (count($xavg) > 0) {
+			$avg = $avg/count($xavg);
+		} else {
+			$avg = 0;
+		}
 	}
 	elseif ($source['operation'] == 'discards_in+errors_in')	{		// discards_in+errors_in
 		
@@ -392,9 +415,14 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		peak + (SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='discards_in') AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'errors_in\'   
-		ORDER BY xvalue ';
-    
+		AND rrd_name=\'errors_in\' ';
+
+		if ($_SESSION['what'] == 'average') {
+			$query .= 'ORDER BY xvalue ';
+		} else {
+			$query .= 'ORDER BY xpeak ';
+		}
+
 		$query .= $_SESSION['sort'] . ' ' ;
 
 		if ($_SESSION['topx'] > 0)    
@@ -405,17 +433,20 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		// avg zde musim takto
 		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_in' ) as xvalue ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'errors_in\' ';
+		WHERE t1.data_template_id = ' . $id . ' AND rrd_name=\'errors_in\'';
     
-		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . $query);
 
 		$avg = 0;
 		foreach ($xavg as $row)	{
 			$avg+=$row['xvalue'];
 		}
-		
-		$avg = $avg/count($xavg);
+
+		if (count($xavg) > 0) {
+			$avg = $avg/count($xavg);
+		} else {
+			$avg = 0;
+		}
 	}
 	elseif ($source['operation'] == 'discards_out+errors_out')	{		// discards_out+errors_out
 		
@@ -424,9 +455,14 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		peak + (SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='discards_out') AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'errors_out\'   
-		ORDER BY xvalue ';
-    
+		AND rrd_name=\'errors_out\' ';
+
+		if ($_SESSION['what'] == 'average') {
+			$query .= 'ORDER BY xvalue ';
+		} else {
+			$query .= 'ORDER BY xpeak ';
+		}
+
 		$query .= $_SESSION['sort'] . ' ' ;
 
 		if ($_SESSION['topx'] > 0)    
@@ -437,17 +473,20 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		// avg zde musim takto
 		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='discards_out' ) as xvalue ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'errors_out\' ';
+		WHERE t1.data_template_id = ' . $id . ' AND rrd_name=\'errors_out\'';
     
-		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . $query);
 
 		$avg = 0;
 		foreach ($xavg as $row)	{
 			$avg+=$row['xvalue'];
 		}
-		
-		$avg = $avg/count($xavg);
+
+		if (count($xavg) > 0) {
+			$avg = $avg/count($xavg);
+		} else {
+			$avg = 0;
+		}
 	}
 	elseif ($source['operation'] == 'traffic_in+traffic_out')	{		// traffic_in+traffic_out - it is in bytes!
 		
@@ -456,8 +495,13 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 		8*peak + 8*(SELECT peak FROM $table WHERE local_data_id = ldid AND rrd_name='traffic_in') AS xpeak ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . '  AS t2 ON t1.local_data_id = t2.local_data_id 
 		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'traffic_out\'   
-		ORDER BY xvalue ';
+		AND rrd_name=\'traffic_out\' ';
+
+		if ($_SESSION['what'] == 'average') {
+			$query .= 'ORDER BY xvalue ';
+		} else {
+			$query .= 'ORDER BY xpeak ';
+		}
     
 		$query .= $_SESSION['sort'] . ' ' ;
 
@@ -465,23 +509,25 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 			$query .= 'LIMIT ' . $_SESSION['topx'];
 
 		$result = db_fetch_assoc("SELECT $columns $query");
-//echo "SELECT $columns $query";
+
 		// avg zde musim takto
 		$columns = " t1.local_data_id AS ldid, average/(SELECT average FROM $table WHERE local_data_id = ldid AND rrd_name='traffic_in' ) as xvalue ";
 		$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . ' 
-		AND rrd_name=\'traffic_out\' ';
+		WHERE t1.data_template_id = ' . $id . ' AND rrd_name=\'traffic_out\'';
     
-		$xavg = db_fetch_assoc ('SELECT ' . $columns . ' ' . $query);
+		$xavg = db_fetch_assoc ('SELECT ' . $columns . $query);
 
 		$avg = 0;
 		foreach ($xavg as $row)	{
 			$avg+=$row['xvalue'];
 		}
-		
-		$avg = 8*($avg/count($xavg));
+
+		if (count($xavg) > 0) {
+			$avg = 8*($avg/count($xavg));
+		} else {
+			$avg = 0;
+		}
 	}
-	
 
 // common part - supported
 	$pie_title = $source['unit'] . ' [ ' . $source['final_unit'] . ' ] ';
@@ -504,7 +550,7 @@ echo 'SELECT plugin_topx_source.* FROM plugin_topx_source JOIN data_template
 			$row['xvalue'] = $row['xvalue']/$val;
 			$row['xpeak'] = $row['xpeak']/$val;
 
-			if ($avg_count == 0)	{ // ugly, i know ... i need call this only one
+			if ($avg_count == 0)	{ // ugly, i know ... i need call this only once
 				$avg = $avg/$val;
 				$avg_count++;
 			}
@@ -535,16 +581,23 @@ else	{	// unsupported
 
 	$columns = " t1.local_data_id AS ldid, concat(t1.name_cache,' - ', t2.rrd_name) AS name, t2.average AS xvalue, t2.peak AS xpeak ";
 	$query = ' FROM data_template_data AS t1 LEFT JOIN ' . $table . ' AS t2 ON t1.local_data_id = t2.local_data_id 
-		WHERE t1.data_template_id = ' . $id . ' 
-    		ORDER BY t2.average ';
-    
-$query .= $_SESSION['sort'] . ' ' ;
-
-if ($_SESSION['topx'] > 0)    
-    $query .= 'LIMIT ' . $_SESSION['topx'];
-
+		WHERE t1.data_template_id = ' . $id . ' ';
 
 	$avg = db_fetch_cell ('SELECT avg(average)' . $query);
+
+	if ($_SESSION['what'] == 'average') {
+		$query .= 'ORDER BY xvalue ';
+	} else {
+		$query .= 'ORDER BY xpeak ';
+	}
+
+	$query .= $_SESSION['sort'] . ' ' ;
+
+
+	if ($_SESSION['topx'] > 0) {
+ 		$query .= 'LIMIT ' . $_SESSION['topx'];
+	}
+
 		
 	array_push($label,'Average all');
 	array_push($graph,$avg);
@@ -577,13 +630,14 @@ if ($_SESSION['topx'] > 0)
 }
 
 // graph
-$xid = 'x' . uniqid();
-print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="800" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
-print "<script type='text/javascript' src='js/chartjs-plugin-annotation.min.js'></script>";
-print "<script type='text/javascript'>";
+if ($_SESSION['topx'] > 0) {
+	$xid = 'x' . uniqid();
+	print '<div class="topx_graph"><br/><br/><canvas id="pie_' . $xid . '" width="800" height="' . (20+$_SESSION['topx']*25 ). '"></canvas>';
+	print "<script type='text/javascript' src='js/chartjs-plugin-annotation.min.js'></script>";
+	print "<script type='text/javascript'>";
 
-$pie_labels = implode('","',$label);
-$pie_values = implode(',',$graph);
+	$pie_labels = implode('","',$label);
+	$pie_values = implode(',',$graph);
 
 print <<<EOF
 var $xid = document.getElementById("pie_$xid").getContext("2d");
@@ -624,11 +678,15 @@ new Chart($xid, {
 });
 EOF;
 
-print "</script></div>";
-// end of graph	     
+	print "</script></div>";
+} else {
+	print "<br/><br/>Displaying all records, graph will not be displayed. It will be displayed only for 50 or less records.<br/>";
+}
+// end of graph
+
 
 print '<br/><br/>';
-print 'DS stats last major run time: ' .  read_config_option('dsstats_last_major_run_time') . '<br/>';    
-print 'DS stats last daily run time: ' .  read_config_option('dsstats_last_daily_run_time') . '<br/>';    
+print 'DS stats last major run time: ' .  read_config_option('dsstats_last_major_run_time') . '<br/>';
+print 'DS stats last daily run time: ' .  read_config_option('dsstats_last_daily_run_time') . '<br/>';
 
 bottom_footer();

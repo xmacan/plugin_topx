@@ -26,6 +26,10 @@ If you find a problem, let me know via github or https://forums.cacti.net/viewto
    
 
 ## Changelog
+	--- 0.7
+		Limit display graph for more than 50 records
+		Add sort by peak
+		
 	--- 0.6
 		Add arithmetical operation again
 		Bug fix
