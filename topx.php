@@ -563,6 +563,9 @@ if ($ar_ds[$_SESSION['ds']]['supported'] == 'true') {
     		array_push ($graph,$row['xvalue']);
 		array_push ($label,$row['name']);
 
+		$row['xvalue'] = is_null($row['xvalue']) ? 0 : $row['xvalue'];
+		$row['xpeak'] = is_null($row['xpeak']) ? 0 : $row['xpeak'];
+
 		print '<tr><td><a href="' .  htmlspecialchars($config['url_path']) . 'graphs.php?action=graph_edit&id=' . $graph_id . '">' . $row['name'] . '</a></td>' .
 			'<td>' . final_operation($row['xvalue'],$source['final_operation'],$source['final_unit'],$source['final_number']) . '</td>' .
 			'<td>' . final_operation($row['xpeak'],$source['final_operation'],$source['final_unit'],$source['final_number'])  . '</td>';
